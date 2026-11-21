@@ -14,6 +14,10 @@ und kann per QR-Code mit **FBI** installiert werden.
 1. Website der Sammlung öffnen (GitHub Pages, Ordner `docs/`).
 2. Auf dem 3DS: **FBI → Remote Install → Scan QR Code**, den Code des Spiels scannen.
 
+Direkt-QR für Sternenschmiede:
+
+<img src="docs/img/sternenschmiede-qr.png" width="220">
+
 Alternativ die `.cia` aus den [Releases](../../releases) auf die SD-Karte kopieren und mit FBI installieren,
 oder die `.3dsx` nach `sd:/3ds/` legen und über den Homebrew Launcher starten.
 
