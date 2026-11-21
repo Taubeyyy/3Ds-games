@@ -43,8 +43,8 @@ static int best_spot(TD *g, int type, float *bx, float *by) {
 	return best;
 }
 
-static const int ORDER[] = {T_IGEL, T_IGEL, T_SCHNECKE, T_KRABBE, T_SEEIGEL, T_EULE, T_KAENGURU, T_AAL, T_BIENE, T_PINGUIN, T_DACHS, T_KRABBE, T_AAL, T_IGEL};
-static const int MAINP[NTOWER] = {1, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+static const int ORDER[] = {T_IGEL, T_IGEL, T_SCHNECKE, T_KRABBE, T_FUCHS, T_SEEIGEL, T_EULE, T_FROSCH, T_KAENGURU, T_AAL, T_BIENE, T_MAULWURF, T_PINGUIN, T_DACHS, T_KRABBE, T_KATZE, T_AAL, T_FROSCH};
+static const int MAINP[NTOWER] = {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0};
 
 static int count(TD *g, int type) {
 	int n = 0;

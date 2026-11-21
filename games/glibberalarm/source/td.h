@@ -10,8 +10,8 @@
 #define MAX_TW 64
 #define MAX_FX 192
 #define MAX_JAR 32
-#define NTOWER 10
-#define NMAP 4
+#define NTOWER 14
+#define NMAP 6
 #define NETYPE 8
 #define NDIFF 3
 #define PATH_W 11.0f
@@ -39,8 +39,8 @@ typedef struct {
 } Enemy;
 
 // ---------- Tuerme
-enum { T_IGEL, T_KRABBE, T_PINGUIN, T_EULE, T_SEEIGEL, T_KAENGURU, T_AAL, T_BIENE, T_DACHS, T_SCHNECKE };
-enum { K_PROJ, K_BOMB, K_FREEZE, K_SNIPER, K_RADIAL, K_BOOMER, K_CHAIN, K_FARM, K_BUFF, K_SLIME };
+enum { T_IGEL, T_KRABBE, T_PINGUIN, T_EULE, T_SEEIGEL, T_KAENGURU, T_AAL, T_BIENE, T_DACHS, T_SCHNECKE, T_FUCHS, T_FROSCH, T_MAULWURF, T_KATZE };
+enum { K_PROJ, K_BOMB, K_FREEZE, K_SNIPER, K_RADIAL, K_BOOMER, K_CHAIN, K_FARM, K_BUFF, K_SLIME, K_PILE };
 enum { TG_FIRST, TG_LAST, TG_STRONG, TG_CLOSE, NTARGET };
 
 typedef struct {
@@ -72,16 +72,20 @@ typedef struct {
 	float buffSpeed, buffRange;
 	int buffDmg, income;
 	float jarBonus;
+	bool homing, pileKeep;
+	float hitBlast, fbInt, fbDmg, fbR, auraInt, auraDmg, auraR, pileLife, pileBlast, sprayInt, novaInt, novaDmg, novaR;
+	int zapJumps, sprayN;
 } TStats;
 
 // ---------- Projektile & Effekte
-enum { P_SPIKE, P_BOMB, P_MINIBOMB, P_SHARD, P_BOOMER, P_SLIME, P_ICE, P_BLADE };
-enum { PF_AP = 1, PF_BOUNCE = 2, PF_CAMO = 4 };
+enum { P_SPIKE, P_BOMB, P_MINIBOMB, P_SHARD, P_BOOMER, P_SLIME, P_ICE, P_BLADE, P_SHURIKEN, P_MAGIC, P_FIREBALL, P_PILE, P_LASER };
+enum { PF_AP = 1, PF_BOUNCE = 2, PF_CAMO = 4, PF_HOMING = 8, PF_EXPLODE = 16, PF_KEEP = 32 };
 typedef struct {
 	uint8_t alive, kind, tower, flags, nh;
 	float x, y, vx, vy, life, dmg, radius, turn, rot, bossMult;
 	int pierce;
 	uint16_t hits[12];
+	float blast;
 } Proj;
 
 enum { FX_RING, FX_POP, FX_BOLT, FX_TRACER, FX_BLAST, FX_SPARK, FX_FREEZE, FX_FIRE, FX_COIN, FX_SHOCK };
@@ -148,7 +152,21 @@ typedef struct {
 	// Ereigniszaehler fuer Sound/UI (vom Frontend zurueckgesetzt)
 	int evPop, evShoot, evBoom, evZap, evFreeze, evCoin, evLeak, evBossPop, evWaveEnd, evBlock;
 	int waveEndBonus;
+	// Fortschritt (Bloons-artig)
+	float towerXp[NTOWER];
+	double xpGained;
+	int evUnlock; // Turm-Index+1, dessen Stufe gerade freigeschaltet wurde
+	int unlockTier;
 } TD;
+
+#define TIER3_XP 1500
+#define TIER4_XP 6000
+enum { UL_OK, UL_MAX, UL_PATH, UL_XP };
+int td_upgrade_lock(TD *g, int ti, int path);
+extern const int TOWER_RANK[NTOWER];
+extern const int MAP_RANK[NMAP];
+int rank_of(double xp);
+double rank_xp(int r); // Gesamt-XP fuer Rang r
 
 void td_init_tables(void);
 void td_new(TD *g, int map, int diff);

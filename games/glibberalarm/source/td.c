@@ -35,7 +35,26 @@ const MapDef MAPS[NMAP] = {
 	{"Volcano", "Kurzer Weg. Nur für Profis!", 5,
 		{{-20, 120}, {120, 120}, {200, 40}, {280, 200}, {420, 120}},
 		0x5A3A30, 0x4E322A, 0x3A2A26, 0xE0602A, 0xFF8A3A, 3},
+	{"Frozen Lake", "Drei Kehren über dem Eis.", 8,
+		{{-20, 200}, {80, 200}, {80, 40}, {200, 40}, {200, 200}, {320, 200}, {320, 40}, {420, 40}},
+		0xE8F4FF, 0xD0E4F8, 0xA8C0D8, 0x7890B0, 0x5AA0D0, 4},
+	{"Candy Land", "Süßer, langer Schlängelweg.", 6,
+		{{-20, 40}, {340, 40}, {340, 120}, {60, 120}, {60, 200}, {420, 200}},
+		0xFFC8E0, 0xFFB0D0, 0x8A5030, 0x5A3020, 0xFF6AB0, 5},
 };
+const int MAP_RANK[NMAP] = {1, 4, 10, 13, 7, 2};
+const int TOWER_RANK[NTOWER] = {1, 3, 8, 2, 1, 5, 10, 14, 16, 4, 6, 12, 18, 20};
+
+double rank_xp(int r) {
+	double t = 0;
+	for (int k = 1; k < r; k++) t += 150 * pow(k, 1.45);
+	return t;
+}
+int rank_of(double xp) {
+	int r = 1;
+	while (r < 99 && xp >= rank_xp(r + 1)) r++;
+	return r;
+}
 
 #define U(...) {__VA_ARGS__}
 const TowerDef TDEF[NTOWER] = {
@@ -99,6 +118,30 @@ const TowerDef TDEF[NTOWER] = {
 		U(U("Säure wirkt schneller", "Schleim entfernt Panzer", "Säure-Schaden 3", "Säure-Schaden 8"),
 			U("55% langsamer", "Spritzt auf mehrere Goo", "Schleim hält 8 s", "Sehr schnell, riesige Spritzer")),
 		U(U(250, 450, 1100, 3800), U(180, 350, 800, 3000))},
+	[T_FUCHS] = {"Ninja Fox", "Schnelle Wurfsterne. Sieht Geister von Anfang an.", 420, K_PROJ, 0xF07A30,
+		{"Shuriken", "Speed"},
+		U(U("Sharp Stars", "Double Star", "Exploding Stars", "Shadow Master"), U("Swift", "Seeking Stars", "Kunai", "Grandmaster")),
+		U(U("Durchschlag +2", "Wirft 2 Sterne", "Sterne explodieren, knacken Panzer", "4 Sterne, doppelt so schnell"),
+			U("Wirft 25% schneller", "Sterne suchen ihr Ziel", "Schaden +2, trifft Panzer", "Irre schnell, Schaden +2")),
+		U(U(200, 450, 1300, 4800), U(220, 400, 1200, 5200))},
+	[T_FROSCH] = {"Wizard Frog", "Magische Geschosse durchbohren mehrere Goo und knacken Panzer.", 480, K_PROJ, 0x5AC85A,
+		{"Arcane", "Fire"},
+		U(U("Intense Magic", "Arcane Blast", "Lightning Bolt", "Archmage"), U("Fireball", "Flame Aura", "Phoenix Spark", "Dragon's Breath")),
+		U(U("Durchschlag +3, Schaden +1", "Schneller und stärker", "Treffer springen als Blitz weiter", "Schaden +4, doppelt so schnell"),
+			U("Wirft alle 2 s einen Feuerball", "Verbrennt Goo in der Nähe", "Riesige Feuerbälle", "Feuer-Atem: Dauerbrand")),
+		U(U(300, 600, 1600, 5500), U(350, 600, 1500, 5000))},
+	[T_MAULWURF] = {"Spike Mole", "Legt Stachelhaufen direkt auf den Weg.", 650, K_PILE, 0x8A6A5A,
+		{"Piles", "Factory"},
+		U(U("Bigger Piles", "Hot Spikes", "Spiked Balls", "Spiked Mines"), U("Faster Digging", "Long Life", "Rapid Piles", "Spike Storm")),
+		U(U("Mehr Stacheln pro Haufen", "Schaden +1, trifft Panzer", "Stachelkugeln: Schaden 2", "Haufen explodieren am Ende"),
+			U("Legt 30% schneller", "Haufen bleiben über Wellen", "Legt nochmal 40% schneller", "Regnet alle 8 s 25 Haufen")),
+		U(U(300, 550, 1500, 4500), U(400, 500, 1300, 5500))},
+	[T_KATZE] = {"Laser Cat", "Feuert Laser im Dauerfeuer. Teuer, aber extrem stark.", 2600, K_PROJ, 0xC0C8E0,
+		{"Power", "Tech"},
+		U(U("Laser Eyes", "Plasma Beams", "Sun Cat", "Cosmic Cat"), U("Super Range", "Ultravision", "Robo Cat", "Tech Terror")),
+		U(U("Durchschlag +1, trifft Panzer", "Schaden +1, Durchschlag +2", "Sonnenstrahl: Schaden +3", "Kosmisch: Schaden +8, x2 gg. Bosse"),
+			U("Reichweite +30", "Sieht Geister", "Zwei Laserarme", "Alle 6 s Nova: 20 Schaden")),
+		U(U(1200, 2500, 9000, 30000), U(800, 1500, 6000, 25000))},
 };
 
 // ---------- Hilfen
@@ -141,6 +184,7 @@ void td_new(TD *g, int map, int diff) {
 	g->lives = DIFF[diff].lives;
 	g->coins = DIFF[diff].startCoins;
 	g->popMul = 1;
+	for (int i = 0; i < NTOWER; i++) g->towerXp[i] = 1e9f; // Frontend setzt echte Werte
 	setup_path(g);
 }
 
@@ -263,7 +307,15 @@ static void pop_enemy(TD *g, int ei, float leftover, int tower) {
 	g->popsTotal += 1;
 	g->evPop++;
 	if (old.type >= E_KOENIG) g->evBossPop++;
-	if (tower >= 0 && tower < MAX_TW && g->tw[tower].alive) g->tw[tower].pops += 1;
+	g->xpGained += 0.1;
+	if (tower >= 0 && tower < MAX_TW && g->tw[tower].alive) {
+		g->tw[tower].pops += 1;
+		int ty = g->tw[tower].type;
+		float before = g->towerXp[ty];
+		g->towerXp[ty] += 1;
+		if (before < TIER3_XP && g->towerXp[ty] >= TIER3_XP) { g->evUnlock = ty + 1; g->unlockTier = 3; }
+		if (before < TIER4_XP && g->towerXp[ty] >= TIER4_XP) { g->evUnlock = ty + 1; g->unlockTier = 4; }
+	}
 	fx(g, FX_POP, old.x, old.y, 0, 0, 0.35f, EDEF[old.type].radius, EDEF[old.type].color);
 	const EnemyDef *d = &EDEF[old.type];
 	if (d->nchild <= 0) return;
@@ -413,6 +465,50 @@ void td_stats(TD *g, const Tower *t, TStats *s) {
 		if (b >= 3) s->slowDur = 8;
 		if (b >= 4) { s->interval *= 0.4f; s->splash = 30; s->splashMax = 12; }
 		break;
+	case T_FUCHS:
+		s->range = 66; s->interval = 0.6f; s->dmg = 1; s->pierce = 2; s->speed = 360; s->count = 1; s->spread = 0.2f; s->radius = 4; s->life = 0.35f; s->camo = true;
+		if (a >= 1) s->pierce += 2;
+		if (a >= 2) s->count = 2;
+		if (a >= 3) { s->hitBlast = 12; s->ap = true; }
+		if (a >= 4) { s->count = 4; s->interval *= 0.5f; }
+		if (b >= 1) s->interval *= 0.8f;
+		if (b >= 2) s->homing = true;
+		if (b >= 3) { s->dmg += 2; s->ap = true; }
+		if (b >= 4) { s->interval *= 0.35f; s->dmg += 2; }
+		break;
+	case T_FROSCH:
+		s->range = 60; s->interval = 1.0f; s->dmg = 1; s->pierce = 3; s->speed = 240; s->count = 1; s->radius = 4; s->life = 0.4f; s->ap = true;
+		if (a >= 1) { s->pierce += 3; s->dmg += 1; }
+		if (a >= 2) { s->interval *= 0.75f; s->dmg += 1; s->speed = 300; }
+		if (a >= 3) s->zapJumps = 6;
+		if (a >= 4) { s->dmg += 4; s->interval *= 0.5f; s->zapJumps = 14; }
+		if (b >= 1) { s->fbInt = 2; s->fbDmg = 2; s->fbR = 20; }
+		if (b >= 2) { s->auraInt = 0.6f; s->auraDmg = 1; s->auraR = 40; }
+		if (b >= 3) { s->fbDmg = 5; s->fbR = 30; s->fbInt = 1.5f; }
+		if (b >= 4) { s->auraInt = 0.2f; s->auraDmg = 2; s->auraR = 55; }
+		break;
+	case T_MAULWURF:
+		s->range = 44; s->interval = 2.2f; s->dmg = 1; s->pierce = 6; s->radius = 6; s->pileLife = 25;
+		if (a >= 1) s->pierce = 10;
+		if (a >= 2) { s->dmg += 1; s->ap = true; }
+		if (a >= 3) { s->pierce = 20; s->dmg = 3; }
+		if (a >= 4) { s->pierce = 30; s->pileBlast = 34; }
+		if (b >= 1) s->interval *= 0.7f;
+		if (b >= 2) { s->pileKeep = true; s->pileLife = 90; }
+		if (b >= 3) s->interval *= 0.6f;
+		if (b >= 4) { s->sprayInt = 8; s->sprayN = 25; }
+		break;
+	case T_KATZE:
+		s->range = 80; s->interval = 0.08f; s->dmg = 1; s->pierce = 2; s->speed = 480; s->count = 1; s->spread = 0.12f; s->radius = 3; s->life = 0.2f;
+		if (a >= 1) { s->pierce += 1; s->ap = true; }
+		if (a >= 2) { s->dmg += 1; s->pierce += 2; }
+		if (a >= 3) { s->dmg += 3; s->pierce += 10; s->radius = 5; }
+		if (a >= 4) { s->dmg += 8; s->bossMult = 2; }
+		if (b >= 1) s->range += 30;
+		if (b >= 2) s->camo = true;
+		if (b >= 3) s->count = 2;
+		if (b >= 4) { s->novaInt = 6; s->novaDmg = 20; s->novaR = 110; }
+		break;
 	}
 	if (s->interval > 0) s->interval /= 1 + t->bSpeed;
 	if (s->range < 900 && s->kind != K_BUFF && s->kind != K_FARM) s->range *= 1 + t->bRange;
@@ -453,13 +549,16 @@ int td_place(TD *g, int type, float x, float y) {
 	return -1;
 }
 
-bool td_can_upgrade(TD *g, int ti, int p) {
+int td_upgrade_lock(TD *g, int ti, int p) {
 	Tower *t = &g->tw[ti];
 	int cur = p ? t->b : t->a, other = p ? t->a : t->b;
-	if (cur >= 4) return false;
-	if (cur + 1 > 2 && other > 2) return false;
-	return true;
+	if (cur >= 4) return UL_MAX;
+	if (cur + 1 > 2 && other > 2) return UL_PATH;
+	if (cur + 1 == 3 && g->towerXp[t->type] < TIER3_XP) return UL_XP;
+	if (cur + 1 == 4 && g->towerXp[t->type] < TIER4_XP) return UL_XP;
+	return UL_OK;
 }
+bool td_can_upgrade(TD *g, int ti, int p) { return td_upgrade_lock(g, ti, p) == UL_OK; }
 
 bool td_upgrade(TD *g, int ti, int p) {
 	if (!td_can_upgrade(g, ti, p)) return false;
@@ -606,6 +705,7 @@ static void slime_hit(TD *g, Proj *p, float x, float y) {
 	fx(g, FX_POP, x, y, 0, 0, 0.3f, s.splash > 10 ? s.splash * 0.7f : 6, 0x9AD04A);
 }
 
+static void chain_zap(TD *g, int ti, int start, float sx, float sy, int jumps, float range, float dmg, float bossMult);
 static float bomb_blast(TD *g, Proj *p) {
 	if (p->kind == P_MINIBOMB) return 12;
 	Tower *t = &g->tw[p->tower];
@@ -626,8 +726,30 @@ static void step_projectiles(TD *g) {
 		if (p->life <= 0) {
 			if (p->kind == P_BOMB || p->kind == P_MINIBOMB)
 				explode(g, p->x, p->y, bomb_blast(g, p), p->pierce, p->dmg, p->tower, p->bossMult, p->kind == P_MINIBOMB);
+			if (p->kind == P_FIREBALL) explode(g, p->x, p->y, p->blast, p->pierce, p->dmg, p->tower, 1, true);
 			p->alive = 0;
 			continue;
+		}
+		if (p->flags & PF_HOMING) {
+			int m = query(g, p->x, p->y, 60, cand, MAX_EN), best = -1;
+			float bd = 1e9f;
+			for (int q = 0; q < m; q++) {
+				Enemy *o = &g->en[cand[q]];
+				if (!o->alive) continue;
+				bool seen = false;
+				for (int h = 0; h < p->nh; h++) if (p->hits[h] == o->id) seen = true;
+				float dd = dist2(p->x, p->y, o->x, o->y);
+				if (!seen && dd < bd) { bd = dd; best = cand[q]; }
+			}
+			if (best >= 0) {
+				float want = atan2f(g->en[best].y - p->y, g->en[best].x - p->x), cur = atan2f(p->vy, p->vx);
+				float da = remainderf(want - cur, 6.2832f), mx = 9 * STEP;
+				if (da > mx) da = mx;
+				if (da < -mx) da = -mx;
+				float sp = sqrtf(p->vx * p->vx + p->vy * p->vy);
+				p->vx = cosf(cur + da) * sp; p->vy = sinf(cur + da) * sp;
+				if (p->life < 0.15f) p->life = 0.15f;
+			}
 		}
 		if (p->turn != 0) {
 			float c = cosf(p->turn * STEP), s = sinf(p->turn * STEP);
@@ -656,11 +778,24 @@ static void step_projectiles(TD *g) {
 				p->alive = 0;
 				break;
 			}
+			if (p->kind == P_FIREBALL) {
+				explode(g, p->x, p->y, p->blast, p->pierce, p->dmg, p->tower, 1, true);
+				p->alive = 0;
+				break;
+			}
 			int r = damage(g, ei, p->dmg, p->flags, p->tower, p->bossMult);
 			if (r < 0) fx(g, FX_SPARK, p->x, p->y, 0, 0, 0.2f, 4, 0xC0C8D8);
+			if (r < 0 && p->kind == P_PILE) continue;
+			if (p->flags & PF_EXPLODE) explode(g, p->x, p->y, p->blast, 6, 1, p->tower, 1, true);
+			if (p->kind == P_MAGIC && g->tw[p->tower].alive && g->tw[p->tower].type == T_FROSCH && g->tw[p->tower].a >= 3) {
+				TStats ms;
+				td_stats(g, &g->tw[p->tower], &ms);
+				if (ms.zapJumps > 0 && p->nh < 2) chain_zap(g, p->tower, -1, p->x, p->y, ms.zapJumps, 30, p->dmg, 1);
+			}
 			if (p->nh < 12) p->hits[p->nh++] = e->id;
 			else { memmove(p->hits, p->hits + 1, 11 * sizeof(uint16_t)); p->hits[11] = e->id; }
 			p->pierce--;
+			if (p->pierce <= 0 && p->kind == P_PILE && p->blast > 0) explode(g, p->x, p->y, p->blast, 30, 3, p->tower, 1, true);
 			if (p->pierce <= 0 || r < 0) { p->alive = 0; break; }
 			if (p->flags & PF_BOUNCE) {
 				// zum naechsten Goo springen
@@ -690,6 +825,74 @@ static void step_projectiles(TD *g) {
 }
 
 // ---------- Turmaktionen
+static void chain_zap(TD *g, int ti, int start, float sx, float sy, int jumps, float range, float dmg, float bossMult) {
+	static int cand[MAX_EN];
+	uint16_t hitIds[40];
+	int nh = 0;
+	float lx = sx, ly = sy;
+	int cur = start;
+	if (cur < 0) {
+		int n = query(g, sx, sy, range, cand, MAX_EN);
+		float bd = 1e9f;
+		for (int k = 0; k < n; k++) {
+			Enemy *o = &g->en[cand[k]];
+			float dd = dist2(sx, sy, o->x, o->y);
+			if (o->alive && dd < bd) { bd = dd; cur = cand[k]; }
+		}
+	}
+	for (int j = 0; j <= jumps && cur >= 0 && nh < 40; j++) {
+		Enemy *en = &g->en[cur];
+		float ex = en->x, ey = en->y;
+		hitIds[nh++] = en->id;
+		fx(g, FX_BOLT, lx, ly, ex, ey, 0.16f, 1.5f, 0xFFF080);
+		damage(g, cur, dmg, PF_AP, ti, bossMult);
+		lx = ex; ly = ey;
+		int n = query(g, ex, ey, range, cand, MAX_EN);
+		int nx = -1;
+		float bd = 1e9f;
+		for (int k = 0; k < n; k++) {
+			Enemy *o = &g->en[cand[k]];
+			if (!o->alive) continue;
+			bool seen = false;
+			for (int h = 0; h < nh; h++) if (hitIds[h] == o->id) seen = true;
+			if (seen) continue;
+			float dd = dist2(ex, ey, o->x, o->y);
+			if (dd < bd) { bd = dd; nx = cand[k]; }
+		}
+		cur = nx;
+	}
+}
+
+static int count_piles(TD *g) {
+	int n = 0;
+	for (int i = 0; i < MAX_PR; i++) n += g->pr[i].alive && g->pr[i].kind == P_PILE;
+	return n;
+}
+
+static bool lay_pile(TD *g, int ti, TStats *s) {
+	Tower *t = &g->tw[ti];
+	if (count_piles(g) > 140) return false;
+	static float px[512], py[512];
+	int n = 0;
+	for (float d = 4; d < g->pathLen && n < 512; d += 6) {
+		float x, y;
+		td_path_pos(g, d, &x, &y);
+		if (x < 0 || y < 0 || x > FW || y > FH) continue;
+		if (dist2(x, y, t->x, t->y) <= s->range * s->range) { px[n] = x; py[n] = y; n++; }
+	}
+	if (!n) return false;
+	int k = (int)(frand() * n) % n;
+	Proj *p = new_proj(g);
+	if (!p) return false;
+	p->kind = P_PILE;
+	p->x = px[k] + (frand() - 0.5f) * 8;
+	p->y = py[k] + (frand() - 0.5f) * 8;
+	p->life = s->pileLife; p->dmg = s->dmg; p->pierce = s->pierce; p->radius = s->radius; p->tower = ti;
+	p->flags = (s->ap ? PF_AP : 0) | (s->pileKeep ? PF_KEEP : 0);
+	p->blast = s->pileBlast; p->bossMult = 1; p->rot = frand() * 6.28f;
+	return true;
+}
+
 static bool fire_tower(TD *g, int ti, TStats *s) {
 	Tower *t = &g->tw[ti];
 	switch (s->kind) {
@@ -711,7 +914,13 @@ static bool fire_tower(TD *g, int ti, TStats *s) {
 			p->vx = cosf(a) * s->speed; p->vy = sinf(a) * s->speed;
 			p->tower = ti; p->dmg = s->dmg; p->radius = s->radius; p->bossMult = s->bossMult;
 			p->flags = (s->ap ? PF_AP : 0);
-			if (s->kind == K_PROJ) { p->kind = s->radius > 4 ? P_BLADE : P_SPIKE; p->pierce = s->pierce; p->life = s->life + s->range / s->speed; }
+			if (s->kind == K_PROJ) {
+				p->kind = t->type == T_FUCHS ? P_SHURIKEN : t->type == T_FROSCH ? P_MAGIC : t->type == T_KATZE ? P_LASER : (s->radius > 4 ? P_BLADE : P_SPIKE);
+				p->pierce = s->pierce;
+				p->life = s->life + s->range / s->speed;
+				if (s->homing) p->flags |= PF_HOMING;
+				if (s->hitBlast > 0) { p->flags |= PF_EXPLODE; p->blast = s->hitBlast; }
+			}
 			if (s->kind == K_BOMB) {
 				p->kind = P_BOMB; p->pierce = s->blastMax;
 				float d = sqrtf(dist2(t->x, t->y, tx, ty));
@@ -803,39 +1012,16 @@ static bool fire_tower(TD *g, int ti, TStats *s) {
 		t->flash = 0.12f;
 		return true;
 	}
+	case K_PILE: return lay_pile(g, ti, s);
 	case K_CHAIN: {
 		int prevFirst = -1;
 		for (int c = 0; c < s->chains; c++) {
 			int e = find_target(g, t, s, s->range, prevFirst);
 			if (e < 0) break;
 			prevFirst = e;
-			uint16_t hitIds[32];
-			int nh = 0;
-			float lx = t->x, ly = t->y;
-			int cur = e;
-			for (int j = 0; j <= s->jumps && cur >= 0 && nh < 32; j++) {
-				Enemy *en = &g->en[cur];
-				float ex = en->x, ey = en->y;
-				hitIds[nh++] = en->id;
-				fx(g, FX_BOLT, lx, ly, ex, ey, 0.16f, 1.5f, 0xFFF080);
-				damage(g, cur, s->dmg, PF_AP, ti, s->bossMult);
-				lx = ex; ly = ey;
-				static int cand[MAX_EN];
-				int n = query(g, ex, ey, s->chainRange, cand, MAX_EN);
-				int nx = -1;
-				float bd = 1e9f;
-				for (int k = 0; k < n; k++) {
-					Enemy *o = &g->en[cand[k]];
-					if (!o->alive) continue;
-					bool seen = false;
-					for (int h = 0; h < nh; h++) if (hitIds[h] == o->id) seen = true;
-					if (seen) continue;
-					float dd = dist2(ex, ey, o->x, o->y);
-					if (dd < bd) { bd = dd; nx = cand[k]; }
-				}
-				cur = nx;
-			}
-			t->ang = atan2f(g->en[e].y - t->y, g->en[e].x - t->x);
+			float ang = atan2f(g->en[e].y - t->y, g->en[e].x - t->x);
+			chain_zap(g, ti, e, t->x, t->y, s->jumps, s->chainRange, s->dmg, s->bossMult);
+			t->ang = ang;
 		}
 		if (prevFirst >= 0) { g->evZap++; t->flash = 0.12f; return true; }
 		return false;
@@ -1182,6 +1368,54 @@ void td_step(TD *g) {
 					if (n) fx(g, FX_SHOCK, t->x, t->y, 0, 0, 0.25f, 40, 0xFFF080);
 				}
 			}
+			if (s.fbInt > 0) {
+				t->cd2 += dt;
+				if (t->cd2 >= s.fbInt) {
+					int e = find_target(g, t, &s, s.range + 10, -1);
+					if (e >= 0) {
+						t->cd2 = 0;
+						Proj *p = new_proj(g);
+						if (p) {
+							float tx, ty;
+							lead(g, &g->en[e], t->x, t->y, 200, &tx, &ty);
+							float a = atan2f(ty - t->y, tx - t->x);
+							p->kind = P_FIREBALL; p->x = t->x; p->y = t->y; p->vx = cosf(a) * 200; p->vy = sinf(a) * 200;
+							p->life = sqrtf(dist2(t->x, t->y, tx, ty)) / 200 + 0.05f; p->dmg = s.fbDmg; p->pierce = 20; p->radius = 5;
+							p->blast = s.fbR; p->tower = i; p->flags = PF_AP; p->bossMult = 1;
+						}
+					}
+				}
+			}
+			if (s.auraInt > 0) {
+				t->cd3 += dt;
+				if (t->cd3 >= s.auraInt) {
+					t->cd3 = 0;
+					int n = query(g, t->x, t->y, s.auraR, cand, MAX_EN);
+					for (int k = 0; k < n; k++) damage(g, cand[k], s.auraDmg, PF_AP, i, 1);
+					if (n) fx(g, FX_FIRE, t->x, t->y, 0, 0, 0.3f, s.auraR, 0xFF7A2A);
+				}
+			}
+			if (s.novaInt > 0) {
+				t->cd2 += dt;
+				if (t->cd2 >= s.novaInt) {
+					int n = query(g, t->x, t->y, s.novaR, cand, MAX_EN);
+					if (n) {
+						t->cd2 = 0;
+						for (int k = 0; k < n; k++) damage(g, cand[k], s.novaDmg, PF_AP, i, 2);
+						fx(g, FX_SHOCK, t->x, t->y, 0, 0, 0.5f, s.novaR, 0x8AE8FF);
+						fx(g, FX_BLAST, t->x, t->y, 0, 0, 0.4f, 30, 0xFFFFFF);
+						g->evBoom++;
+					}
+				}
+			}
+			if (s.sprayInt > 0) {
+				t->cd2 += dt;
+				if (t->cd2 >= s.sprayInt) {
+					t->cd2 = 0;
+					for (int k = 0; k < s.sprayN; k++) lay_pile(g, i, &s);
+					fx(g, FX_RING, t->x, t->y, 0, 0, 0.4f, s.range, 0xC0A080);
+				}
+			}
 			if (s.kind == K_CHAIN && s.stormInt > 0) {
 				t->cd2 += dt;
 				if (t->cd2 >= s.stormInt && td_enemies_alive(g) > 0) {
@@ -1210,8 +1444,10 @@ void td_step(TD *g) {
 		g->coins += bonus;
 		g->waveEndBonus = bonus;
 		g->evWaveEnd++;
-		// Projektile aufraeumen
-		for (int i = 0; i < MAX_PR; i++) g->pr[i].alive = 0;
+		// Projektile aufraeumen (dauerhafte Stachelhaufen bleiben)
+		for (int i = 0; i < MAX_PR; i++)
+			if (!(g->pr[i].kind == P_PILE && (g->pr[i].flags & PF_KEEP))) g->pr[i].alive = 0;
+		g->xpGained += 10 + g->wave * 0.5;
 		if (g->wave >= DIFF[g->diff].finalWave && !g->endless) g->won = true;
 	}
 }

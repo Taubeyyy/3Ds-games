@@ -3,9 +3,9 @@
     "id": "glibberalarm",
     "title": "Goo Alert",
     "genre": "Tower Defense",
-    "version": "1.1.0",
-    "desc": "Stoppe den Goo! 10 Tier-Türme (Spike Hog, Boom Crab, Volt Eel …) mit je 2 Upgrade-Pfaden, Goo der in kleinere zerplatzt, Geister-, Panzer- und Nachwachs-Goo, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Türme per Touch aufs Feld ziehen.",
-    "hours": "4 Karten × 3 Stufen, bis zu 80 Wellen"
+    "version": "2.0.0",
+    "desc": "Stoppe den Goo! 14 Tier-Türme (Spike Hog, Ninja Fox, Wizard Frog, Laser Cat …) mit je 2 Upgrade-Pfaden. Rang-System mit XP schaltet Türme und Karten frei, Turm-XP schaltet Stufe 3 und 4 frei. 6 texturierte Karten, Medaillen und Kronen, Bosse, Endlosmodus.",
+    "hours": "6 Karten × 3 Stufen, Ränge, Turm-XP, Kronen"
   },
   {
     "id": "sternenschmiede",

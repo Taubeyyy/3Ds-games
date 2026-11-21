@@ -7,7 +7,7 @@ und kann per QR-Code mit **FBI** installiert werden.
 
 | Spiel | Genre | Beschreibung |
 |---|---|---|
-| **Goo Alert** | Tower Defense | 10 Türme mit je 2 Upgrade-Pfaden (4 Stufen), Glibber die in kleinere zerplatzen, Geister/Panzer/Nachwachsen, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Drag & Drop per Touch. |
+| **Goo Alert** (v2) | Tower Defense | 14 Türme mit je 2 Upgrade-Pfaden, Rang-System (XP schaltet Türme und Karten frei), Turm-XP für Stufe 3 und 4, Medaillen und Kronen, 6 texturierte Karten, Bosse, Endlosmodus. Drag & Drop per Touch. |
 | **Star Forge** (v2) | Idle + Weltraum-Action | Expeditionen mit eigenem Bergbau-Schiff durch 12 Sektoren (Erz, Minen, Drohnen, Sprungtore), 10 Schiffs-Upgrades, Aufträge, 20 Artefakte. Dazu 14 Gebäude, 220+ Upgrades, Supernova- und Big-Bang-Prestige, 157 Erfolge. |
 
 ## Installation
@@ -49,6 +49,7 @@ Jedes Spiel trennt Logik und Grafik, z. B. bei Goo Alert (`games/glibberalarm`):
 - `source/td.c`: Türme, Glibber, Wellen, Karten (ohne 3DS-Abhängigkeiten)
 - `source/main.c`: Grafik, Touch, Sound, Speichern
 - `test/sim.c`: Bot spielt alle Karten und Schwierigkeitsgrade (Balance-Check)
+- `gfx/make_gfx.py`: erzeugt alle Sprites, Karten-Hintergründe und das Titelbild (Texturen via tex3ds)
 - `test/shots.sh`: Screenshots am PC
 
 Star Forge (`games/sternenschmiede`):

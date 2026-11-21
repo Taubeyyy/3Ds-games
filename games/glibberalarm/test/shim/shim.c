@@ -316,3 +316,86 @@ void C2D_DrawEllipse(float x, float y, float z, float w, float h, u32 c0, u32 c1
 		}
 }
 void C2D_DrawEllipseSolid(float x, float y, float z, float w, float h, u32 c) { C2D_DrawEllipse(x, y, z, w, h, c, c, c, c); }
+
+// ---------------- Sprites
+#define SHEETS(X) X(sprites) X(bg0) X(bg1) X(bg2) X(bg3) X(bg4) X(bg5) X(title) X(menubg)
+#define DEF(n) const u8 n##_t3x[] = #n; const u32 n##_t3x_size = sizeof(#n);
+SHEETS(DEF)
+typedef struct { Tex3DS_SubTexture sub; unsigned char *px; } ShimImg;
+struct C2D_SpriteSheet_s { int n; ShimImg *im; };
+static C3D_Tex dummyTex;
+C2D_SpriteSheet C2D_SpriteSheetLoadFromMem(const void *data, size_t size) {
+	(void)size;
+	char p[512];
+	snprintf(p, sizeof p, "%s/%s.bin", getenv("SHIM_GFX") ? getenv("SHIM_GFX") : ".", (const char *)data);
+	struct C2D_SpriteSheet_s *s = calloc(1, sizeof *s);
+	FILE *f = fopen(p, "rb");
+	if (!f) { fprintf(stderr, "Sheet fehlt: %s\n", p); return s; }
+	u32 n;
+	if (fread(&n, 4, 1, f) != 1) n = 0;
+	s->n = n;
+	s->im = calloc(n, sizeof(ShimImg));
+	for (u32 i = 0; i < n; i++) {
+		u16 wh[2];
+		if (fread(wh, 2, 2, f) != 2) break;
+		s->im[i].sub.width = wh[0]; s->im[i].sub.height = wh[1];
+		s->im[i].px = malloc(wh[0] * wh[1] * 4);
+		if (fread(s->im[i].px, 4, wh[0] * wh[1], f)) {}
+	}
+	fclose(f);
+	return s;
+}
+C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet s, size_t i) {
+	C2D_Image im = {&dummyTex, NULL};
+	if (s && (int)i < s->n) im.subtex = &s->im[i].sub;
+	return im;
+}
+void C2D_SpriteSheetFree(C2D_SpriteSheet s) { (void)s; }
+void C2D_PlainImageTint(C2D_ImageTint *t, u32 color, float blend) { t->color = color; t->blend = blend; }
+static bool drawImg(C2D_Image img, float cx, float cy, float ang, const C2D_ImageTint *t, float sx, float sy) {
+	if (!img.subtex || fabsf(sx) < 1e-4f || fabsf(sy) < 1e-4f) return false;
+	const ShimImg *si = (const ShimImg *)img.subtex;
+	int w = si->sub.width, h = si->sub.height;
+	float ca = cosf(ang), sa = sinf(ang);
+	float hw = w * fabsf(sx) / 2, hh = h * fabsf(sy) / 2;
+	float ex = fabsf(ca) * hw + fabsf(sa) * hh, ey = fabsf(sa) * hw + fabsf(ca) * hh;
+	u32 tc = t ? t->color : 0xFFFFFFFF;
+	float bl = t ? t->blend : 0;
+	float tr = (tc & 255) / 255.0f, tg = ((tc >> 8) & 255) / 255.0f, tb = ((tc >> 16) & 255) / 255.0f, ta = ((tc >> 24) & 255) / 255.0f;
+	for (int j = (int)floorf(cy - ey); j <= (int)ceilf(cy + ey); j++)
+		for (int i = (int)floorf(cx - ex); i <= (int)ceilf(cx + ex); i++) {
+			if (i < 0 || j < 0 || i >= curW || j >= curH) continue;
+			float dx = i + 0.5f - cx, dy = j + 0.5f - cy;
+			float lx = ca * dx + sa * dy, ly = -sa * dx + ca * dy;
+			float u = lx / sx + w / 2.0f - 0.5f, v = ly / sy + h / 2.0f - 0.5f;
+			if (u < -0.5f || v < -0.5f || u > w - 0.5f || v > h - 0.5f) continue;
+			int u0 = (int)floorf(u), v0 = (int)floorf(v);
+			float fu = u - u0, fv = v - v0;
+			float acc[4] = {0, 0, 0, 0};
+			for (int q = 0; q < 4; q++) {
+				int uu = u0 + (q & 1), vv = v0 + (q >> 1);
+				if (uu < 0) uu = 0;
+				if (vv < 0) vv = 0;
+				if (uu >= w) uu = w - 1;
+				if (vv >= h) vv = h - 1;
+				float wt = ((q & 1) ? fu : 1 - fu) * ((q >> 1) ? fv : 1 - fv);
+				const unsigned char *pp = si->px + (vv * w + uu) * 4;
+				for (int c = 0; c < 4; c++) acc[c] += pp[c] / 255.0f * wt;
+			}
+			float r = acc[0] + (tr - acc[0]) * bl, g = acc[1] + (tg - acc[1]) * bl, b = acc[2] + (tb - acc[2]) * bl, a = acc[3] * ta;
+			if (a <= 0.003f) continue;
+			float *p = cur[j * curW + i];
+			p[0] += (r - p[0]) * a; p[1] += (g - p[1]) * a; p[2] += (b - p[2]) * a;
+		}
+	return true;
+}
+bool C2D_DrawImageAt(C2D_Image img, float x, float y, float d, const C2D_ImageTint *t, float sx, float sy) {
+	(void)d;
+	if (!img.subtex) return false;
+	float w = img.subtex->width, h = img.subtex->height;
+	return drawImg(img, x + w * sx / 2, y + h * sy / 2, 0, t, sx, sy);
+}
+bool C2D_DrawImageAtRotated(C2D_Image img, float x, float y, float d, float ang, const C2D_ImageTint *t, float sx, float sy) {
+	(void)d;
+	return drawImg(img, x, y, ang, t, sx, sy);
+}

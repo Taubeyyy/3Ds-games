@@ -26,3 +26,17 @@ void C2D_DrawText(const C2D_Text *, u32 flags, float x, float y, float z, float 
 void C2D_TextGetDimensions(const C2D_Text *, float sx, float sy, float *w, float *h);
 void C2D_DrawEllipse(float x, float y, float z, float w, float h, u32 c0, u32 c1, u32 c2, u32 c3);
 void C2D_DrawEllipseSolid(float x, float y, float z, float w, float h, u32 c);
+// ---- Sprites (Desktop-Ersatz)
+typedef struct { u16 width, height; float left, top, right, bottom; } Tex3DS_SubTexture;
+typedef struct { int dummy; } C3D_Tex;
+typedef struct { C3D_Tex *tex; const Tex3DS_SubTexture *subtex; } C2D_Image;
+typedef struct C2D_SpriteSheet_s *C2D_SpriteSheet;
+typedef struct { u32 color; float blend; } C2D_ImageTint;
+enum { GPU_LINEAR = 1 };
+C2D_SpriteSheet C2D_SpriteSheetLoadFromMem(const void *data, size_t size);
+C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet s, size_t i);
+void C2D_SpriteSheetFree(C2D_SpriteSheet s);
+void C2D_PlainImageTint(C2D_ImageTint *t, u32 color, float blend);
+bool C2D_DrawImageAt(C2D_Image img, float x, float y, float d, const C2D_ImageTint *t, float sx, float sy);
+bool C2D_DrawImageAtRotated(C2D_Image img, float x, float y, float d, float ang, const C2D_ImageTint *t, float sx, float sy);
+static inline void C3D_TexSetFilter(C3D_Tex *t, int a, int b) { (void)t; (void)a; (void)b; }

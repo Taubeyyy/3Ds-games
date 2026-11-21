@@ -1,0 +1,15 @@
+4 shot a_title
+6 tap 160 78
+14 shot b_maps
+16 tap 160 218
+26 drag 26 215 104 126 10
+40 drag 72 215 188 120 10
+54 drag 118 215 40 160 10
+68 drag 164 215 250 150 10
+82 drag 210 215 104 76 10
+96 tap 290 215
+100 speed 6
+102 tap 290 215
+150 tap 104 100
+160 shot c_game
+162 quit

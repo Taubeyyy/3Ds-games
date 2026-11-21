@@ -12,6 +12,7 @@ TARGET      := glibberalarm
 BUILD       := build
 SOURCES     := source
 DATA        := data
+GRAPHICS    := gfx
 INCLUDES    := source
 
 APP_TITLE       := Goo Alert
@@ -33,12 +34,16 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 export OUTPUT := $(CURDIR)/$(TARGET)
 export TOPDIR := $(CURDIR)
-export VPATH  := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) $(foreach dir,$(DATA),$(CURDIR)/$(dir))
+export VPATH  := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) $(foreach dir,$(DATA),$(CURDIR)/$(dir)) $(foreach dir,$(GRAPHICS),$(CURDIR)/$(dir))
 export DEPSDIR := $(CURDIR)/$(BUILD)
 
 CFILES   := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+GFXFILES := $(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.t3s)))
 export LD := $(CC)
-export OFILES := $(CFILES:.c=.o)
+export T3XFILES := $(GFXFILES:.t3s=.t3x)
+export OFILES_SOURCES := $(CFILES:.c=.o)
+export OFILES := $(addsuffix .o,$(T3XFILES)) $(OFILES_SOURCES)
+export HFILES := $(addsuffix .h,$(subst .,_,$(T3XFILES)))
 export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) $(foreach dir,$(LIBDIRS),-I$(dir)/include) -I$(CURDIR)/$(BUILD)
 export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 export APP_ICON := $(TOPDIR)/$(ICON)
@@ -62,6 +67,16 @@ DEPENDS := $(OFILES:.o=.d)
 
 $(OUTPUT).3dsx: $(OUTPUT).elf $(OUTPUT).smdh
 $(OUTPUT).elf: $(OFILES)
+$(OFILES_SOURCES): $(HFILES)
+
+.PRECIOUS: %.t3x
+%.t3x.o %_t3x.h: %.t3x
+	@echo $(notdir $<)
+	@$(bin2o)
+
+%.t3x: %.t3s
+	@echo $(notdir $<)
+	@tex3ds -i $< -o $@
 
 -include $(DEPENDS)
 #---------------------------------------------------------------------------------
