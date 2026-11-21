@@ -12,6 +12,12 @@ if [ -z "$IN_DOCKER" ]; then
   exec docker run --rm -e IN_DOCKER=1 -v "$ROOT":/w -w /w $IMG ./build.sh "$@"
 fi
 mkdir -p dist
+# Engine-Demos (Compile-Check)
+if [ -z "$1" ]; then
+  for d in engine/demos/*/; do
+    [ -f "$d/Makefile" ] && { echo "== Demo $(basename "$d")"; make -C "$d" -s >/dev/null; }
+  done
+fi
 for dir in games/${1:-*}/; do
   g="$(basename "$dir")"
   source "$dir/game.cfg"

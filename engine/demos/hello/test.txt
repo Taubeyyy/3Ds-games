@@ -1,0 +1,4 @@
+20 tap 160 150
+24 drag 60 120 260 180 12
+40 shot hello
+42 quit
