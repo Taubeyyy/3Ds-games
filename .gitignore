@@ -1,0 +1,10 @@
+build/
+dist/
+*.elf
+*.3dsx
+*.smdh
+*.cia
+*.map
+tools/Project_CTR/
+tools/bannertool/
+tools/bin/

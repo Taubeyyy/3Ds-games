@@ -1,0 +1,17 @@
+3 tap 288 222
+10 tap 80 118
+18 shot m_bang
+20 tap 30 42
+28 tap 236 118
+36 shot n_chal
+38 tap 30 42
+46 tap 80 175
+54 shot o_opt
+56 tap 30 42
+64 tap 236 175
+72 drag 160 180 160 60 10
+90 shot p_help
+92 tap 224 222
+100 tap 268 58
+108 shot q_modal
+110 quit

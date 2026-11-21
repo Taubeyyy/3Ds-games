@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3DS Sammlung</title>
+<style>
+  :root {
+    --bg1: #070a1c; --bg2: #171042; --panel: #141a3c; --line: #2c3770;
+    --text: #eef1ff; --dim: #8e97c6; --cyan: #4ad8ff; --gold: #ffd25a; --purple: #b070ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text);
+    background: radial-gradient(ellipse at 30% 0%, #1d1650 0%, transparent 60%), linear-gradient(var(--bg1), var(--bg2));
+    background-attachment: fixed; min-height: 100vh;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  header h1 { font-size: clamp(28px, 6vw, 44px); margin: 0 0 6px; letter-spacing: .5px; }
+  header h1 span { color: var(--cyan); }
+  header p { color: var(--dim); margin: 0 0 28px; }
+  .how {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 28px;
+  }
+  .how h2 { font-size: 16px; margin: 0 0 8px; color: var(--gold); }
+  .how ol { margin: 0; padding-left: 20px; color: var(--dim); line-height: 1.6; }
+  .how b { color: var(--text); }
+  .game {
+    display: grid; grid-template-columns: 1fr 210px; gap: 18px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-bottom: 22px;
+  }
+  .game .banner { width: 100%; display: block; image-rendering: auto; }
+  .info { padding: 0 18px 18px; }
+  .info h3 { margin: 14px 0 2px; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  .info h3 img { width: 32px; height: 32px; border-radius: 6px; }
+  .tags { color: var(--cyan); font-size: 13px; margin-bottom: 8px; }
+  .info p { color: var(--dim); line-height: 1.5; margin: 0 0 14px; }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 9px 14px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px;
+    background: var(--cyan); color: #0b1030;
+  }
+  .btn.alt { background: #232d5e; color: var(--text); }
+  .qr { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px; background: #0d1230; }
+  .qr .code { background: #fff; padding: 10px; border-radius: 10px; }
+  .qr small { color: var(--dim); margin-top: 8px; text-align: center; font-size: 12px; }
+  footer { color: var(--dim); font-size: 13px; text-align: center; margin-top: 36px; }
+  @media (max-width: 640px) {
+    .game { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>3DS <span>Sammlung</span></h1>
+    <p>Eigene Homebrew-Spiele für den Nintendo 3DS, optimiert für lange Fahrten.</p>
+  </header>
+
+  <section class="how">
+    <h2>Installation per QR-Code</h2>
+    <ol>
+      <li>Auf dem 3DS (mit Custom Firmware) <b>FBI</b> öffnen.</li>
+      <li><b>Remote Install</b> → <b>Scan QR Code</b> wählen.</li>
+      <li>Den QR-Code des Spiels scannen und die Installation bestätigen.</li>
+      <li>Das Spiel erscheint im HOME-Menü. Spielstände liegen unter <b>sd:/3ds/&lt;spiel&gt;/</b>.</li>
+    </ol>
+  </section>
+
+  <main id="games"></main>
+
+  <footer>Gebaut mit devkitARM, libctru und citro2d.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  // Repo aus der GitHub-Pages-Adresse ableiten (owner.github.io/repo)
+  function repo() {
+    const h = location.hostname;
+    if (h.endsWith(".github.io")) {
+      const owner = h.split(".")[0];
+      const name = location.pathname.split("/").filter(Boolean)[0] || (owner + ".github.io");
+      return owner + "/" + name;
+    }
+    return "OWNER/REPO";
+  }
+  const R = repo();
+  const dl = (f) => `https://github.com/${R}/releases/latest/download/${f}`;
+
+  fetch("games.json").then(r => r.json()).then(games => {
+    const root = document.getElementById("games");
+    for (const g of games) {
+      const el = document.createElement("article");
+      el.className = "game";
+      el.innerHTML = `
+        <div>
+          <img class="banner" src="img/${g.id}-banner.png" alt="">
+          <div class="info">
+            <h3><img src="img/${g.id}-icon.png" alt="">${g.title}</h3>
+            <div class="tags">${g.genre} · v${g.version} · ${g.hours}</div>
+            <p>${g.desc}</p>
+            <div class="btns">
+              <a class="btn" href="${dl(g.id + ".cia")}">CIA laden</a>
+              <a class="btn alt" href="${dl(g.id + ".3dsx")}">3DSX laden</a>
+            </div>
+          </div>
+        </div>
+        <div class="qr"><div class="code" id="qr-${g.id}"></div><small>Mit FBI scannen</small></div>`;
+      root.appendChild(el);
+      new QRCode(document.getElementById("qr-" + g.id), { text: dl(g.id + ".cia"), width: 168, height: 168, correctLevel: QRCode.CorrectLevel.M });
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+3 tap 224 222
+8 drag 160 190 160 150 6
+24 shot r_stars
+26 tap 288 222
+32 tap 80 118
+38 drag 160 190 160 150 6
+54 shot s_bang
+56 tap 30 42
+62 tap 236 175
+68 drag 160 180 160 60 10
+86 shot t_help
+88 tap 160 222
+92 drag 160 190 160 120 6
+108 shot u_upg
+110 quit

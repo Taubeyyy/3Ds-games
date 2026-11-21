@@ -1,0 +1,43 @@
+# 3DS Sammlung
+
+Eigene Homebrew-Spiele für den Nintendo 3DS. Jedes Spiel wird automatisch als `.cia` und `.3dsx` gebaut
+und kann per QR-Code mit **FBI** installiert werden.
+
+## Spiele
+
+| Spiel | Genre | Beschreibung |
+|---|---|---|
+| **Sternenschmiede** | Idle / Incremental | 14 Gebäude, 220+ Upgrades, Meteore, Supernova- und Urknall-Prestige, 6 Prüfungen, 142 Erfolge. Touch-Steuerung, 3D-Effekt, läuft im Standby weiter. |
+
+## Installation
+
+1. Website der Sammlung öffnen (GitHub Pages, Ordner `docs/`).
+2. Auf dem 3DS: **FBI → Remote Install → Scan QR Code**, den Code des Spiels scannen.
+
+Alternativ die `.cia` aus den [Releases](../../releases) auf die SD-Karte kopieren und mit FBI installieren,
+oder die `.3dsx` nach `sd:/3ds/` legen und über den Homebrew Launcher starten.
+
+## Selbst bauen
+
+Benötigt nur Docker:
+
+```bash
+./build.sh                 # alle Spiele
+./build.sh sternenschmiede # nur eins
+```
+
+Ergebnis liegt in `dist/`. Ein neues Release entsteht automatisch, wenn ein Tag wie `v1.0.0` gepusht wird.
+
+## Neues Spiel hinzufügen
+
+1. Ordner `games/<name>/` mit `source/`, `meta/icon.png` (48×48), `meta/banner.png` (256×128),
+   `meta/banner.wav`, `Makefile` und `game.cfg` anlegen (am besten `sternenschmiede` kopieren).
+2. In `game.cfg` eine eigene `UNIQUE_ID` und einen eigenen `PRODUCT_CODE` vergeben.
+3. Das Spiel in `docs/games.json` eintragen und Bilder nach `docs/img/` kopieren.
+
+## Entwicklung (Sternenschmiede)
+
+- `source/game.c`: Spiellogik ohne 3DS-Abhängigkeiten
+- `source/main.c`: Grafik, Touch, Sound, Speichern (citro2d)
+- `test/sim.c`: Balancing-Simulation (`gcc test/sim.c source/game.c -lm && ./a.out 12`)
+- `test/shots.sh`: Screenshots am PC über einen Software-Renderer

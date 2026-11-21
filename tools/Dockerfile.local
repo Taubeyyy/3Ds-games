@@ -1,0 +1,2 @@
+FROM devkitpro/devkitarm
+COPY bin/ /usr/local/bin/

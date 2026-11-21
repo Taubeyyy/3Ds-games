@@ -1,0 +1,13 @@
+4 shot a_start
+10 tap 160 112
+13 tap 160 112
+16 tap 150 100
+19 tap 170 120
+22 tap 160 112
+25 tap 160 112
+28 tap 160 112
+31 tap 160 112
+33 shot b_core
+40 tap 96 222
+48 shot c_build
+50 quit

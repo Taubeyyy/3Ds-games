@@ -1,0 +1,23 @@
+3 shot d_core3h
+6 tap 96 222
+12 shot e_build
+14 tap 160 222
+20 tap 30 115
+26 shot f_upg
+28 tap 224 222
+34 shot g_stars
+36 tap 288 222
+42 shot h_more
+44 tap 80 60
+50 shot i_ach
+52 tap 30 42
+56 tap 236 60
+62 shot j_stats
+64 tap 30 42
+66 tap 236 175
+72 shot k_opt
+74 tap 30 42
+76 tap 224 222
+80 tap 268 58
+86 shot l_modal
+90 quit
