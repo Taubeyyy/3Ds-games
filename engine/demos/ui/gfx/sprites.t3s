@@ -1,0 +1,4 @@
+--atlas -f rgba8 -z auto
+png/orb_blue.png
+png/orb_pink.png
+png/glow.png

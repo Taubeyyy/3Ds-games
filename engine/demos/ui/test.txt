@@ -1,0 +1,12 @@
+10 shot a_menu
+14 tap 220 140
+22 shot b_toast
+30 tap 92 95
+50 shot c_list
+54 drag 160 200 160 80 10
+80 shot d_scrolled
+84 tap 40 18
+104 tap 227 95
+124 tap 160 64
+130 shot e_settings
+132 quit
