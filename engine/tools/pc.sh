@@ -21,7 +21,7 @@ done
 MODS="$(grep -E '^FORGE_MODULES' "$GAME/Makefile" 2>/dev/null | sed 's/.*=//')"
 MODSRC=""; MODINC=""; MODLIB=""
 for m in $MODS; do
-	MODSRC="$MODSRC $(ls "$ENG"/modules/$m/*.cpp)"
+	MODSRC="$MODSRC $(ls "$ENG"/modules/$m/*.cpp "$ENG"/modules/$m/pc/*.cpp 2>/dev/null)"
 	if [ "$m" = physics2d ]; then
 		T=/tmp/forge-pc/third/box2d
 		if [ ! -f $T/build-pc/libbox2d.a ]; then

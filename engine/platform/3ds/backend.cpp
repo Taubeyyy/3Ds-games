@@ -316,9 +316,17 @@ int run(App &app, const Config &cfg) {
 	C2D_Init(cfg.maxObjects);
 	C2D_Prepare();
 	C3D_DepthTest(false, GPU_ALWAYS, GPU_WRITE_COLOR);
-	C3D_RenderTarget *top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
-	C3D_RenderTarget *topR = C2D_CreateScreenTarget(GFX_TOP, GFX_RIGHT);
-	C3D_RenderTarget *bot = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+	// Eigene Ziele mit 24-Bit-Tiefenpuffer (für gfx3d), Ausgabe wie citro2d
+	const u32 xfer = GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) |
+		GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8) | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO);
+	auto mk = [&](gfxScreen_t s, gfx3dSide_t side, int w) {
+		C3D_RenderTarget *t = C3D_RenderTargetCreate(240, w, GPU_RB_RGBA8, GPU_RB_DEPTH24_STENCIL8);
+		C3D_RenderTargetSetOutput(t, s, side, xfer);
+		return t;
+	};
+	C3D_RenderTarget *top = mk(GFX_TOP, GFX_LEFT, 400);
+	C3D_RenderTarget *topR = mk(GFX_TOP, GFX_RIGHT, 400);
+	C3D_RenderTarget *bot = mk(GFX_BOTTOM, GFX_LEFT, 320);
 	g_tbuf = C2D_TextBufNew(8192);
 	if (R_SUCCEEDED(ndspInit())) {
 		g_sndOk = true;
@@ -359,7 +367,8 @@ int run(App &app, const Config &cfg) {
 		for (int e = 0; e < 2; e++) {
 			if (e == 1 && app.stereoSlider <= 0.01f) break;
 			C3D_RenderTarget *t = e ? topR : top;
-			C2D_TargetClear(t, C2D_Color32(0, 0, 0, 255));
+			C2D_Flush();
+			C3D_RenderTargetClear(t, C3D_CLEAR_ALL, 0x000000FF, 0);
 			C2D_SceneBegin(t);
 			g = Gfx();
 			g.screen = Screen::Top; g.width = TOP_W; g.height = SCR_H;
@@ -367,7 +376,8 @@ int run(App &app, const Config &cfg) {
 			g.stereo = app.stereoSlider;
 			app.draw(g);
 		}
-		C2D_TargetClear(bot, C2D_Color32(0, 0, 0, 255));
+		C2D_Flush();
+		C3D_RenderTargetClear(bot, C3D_CLEAR_ALL, 0x000000FF, 0);
 		C2D_SceneBegin(bot);
 		g = Gfx();
 		g.screen = Screen::Bottom; g.width = BOT_W; g.height = SCR_H;

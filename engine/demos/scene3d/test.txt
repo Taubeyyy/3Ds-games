@@ -1,0 +1,12 @@
+10 shot start
+12 stick 0 1 40
+60 shot walk
+62 key B
+64 tap 160 118
+70 tap 160 150
+80 shot notex
+82 tap 160 86
+84 hold 160 200 1
+86 drag 40 220 280 220 20
+120 shot rot
+122 quit

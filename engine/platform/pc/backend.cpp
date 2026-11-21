@@ -16,6 +16,7 @@ namespace forge {
 static float fbTop[SCR_H][TOP_W][3], fbBot[SCR_H][BOT_W][3];
 static float (*cur)[3];
 static int curW, curH;
+float (*pcFramebuffer(int *w, int *h))[3] { *w = curW; *h = curH; return cur; } // für gfx3d
 static unsigned char g_font[224][1 + 32 * 30];
 
 Color Color::mix(Color o, float t) const {

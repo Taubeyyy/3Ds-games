@@ -1,0 +1,2 @@
+-f rgba8 -m lanczos -z auto
+png/floor.png
