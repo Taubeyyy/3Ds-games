@@ -158,6 +158,7 @@ struct Config {
 	bool stereo = true;           // 3D-Effekt erlauben
 	int maxObjects = 16000;       // Zeichenbudget pro Bild
 	bool romfs = false;
+	bool debugCombo = true;       // L+R+SELECT blendet die Profiler-Anzeige ein/aus
 };
 
 class App {
@@ -176,5 +177,29 @@ int run(App &app, const Config &cfg);
 
 // Zeit seit 1900 in Millisekunden (für Offline-Fortschritt)
 u64 nowMs();
+double tickMs(); // hochauflösende Zeit in Millisekunden (für Messungen)
+
+// ------------------------------------------------------------------ Debug / Profiler
+namespace debug {
+struct Stats {
+	float fps = 60, frameMs = 16.7f, updateMs = 0, drawMs = 0, gpuMs = 0;
+	u32 memFree = 0, linearFree = 0; // Bytes (nur 3DS)
+	int updatesPerFrame = 1;
+};
+const Stats &stats();
+void begin(const char *name);   // Messbereich (verschachtelbar, max. 16 Namen)
+void end();
+struct Scope { explicit Scope(const char *n) { begin(n); } ~Scope() { end(); } };
+void overlay(Gfx &g, float x = 4, float y = 30);  // FPS, Zeiten, Speicher, Bereiche als Balken
+void log(const char *fmt, ...);
+void drawLog(Gfx &g, float x, float y, int lines = 8);
+bool overlayOn();                // per L+R+SELECT umgeschaltet (Config::debugCombo)
+// intern (Backends)
+void frameDone(float frameMs, float updMs, float drawMs, float gpuMs, int updates, u32 memFree, u32 linFree);
+void toggle();
+} // namespace debug
+#define FORGE_PROFILE(name) ::forge::debug::Scope FORGE_CAT(_forge_prof_, __LINE__)(name)
+#define FORGE_CAT2(a, b) a##b
+#define FORGE_CAT(a, b) FORGE_CAT2(a, b)
 
 } // namespace forge

@@ -1,5 +1,5 @@
 10 shot start
-12 stick 0 1 40
+12 stick 0 -1 40
 60 shot walk
 62 key B
 64 tap 160 118

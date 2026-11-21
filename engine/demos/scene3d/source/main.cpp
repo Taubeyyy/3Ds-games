@@ -56,7 +56,7 @@ public:
 		if (ui::clicked(3)) { textures = !textures; audio::play(sClick); }
 		if (ui::clicked(4)) { orbit = !orbit; audio::play(sClick); }
 		// Bewegung relativ zur Kamera
-		Vec2 mv = in.stick;
+		Vec2 mv(in.stick.x, -in.stick.y); // Stick: y nach unten positiv → vorwärts = oben
 		if (in.holding(KEY_DLEFT)) mv.x = -1;
 		if (in.holding(KEY_DRIGHT)) mv.x = 1;
 		if (in.holding(KEY_DUP)) mv.y = 1;

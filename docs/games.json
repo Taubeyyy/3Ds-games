@@ -19,7 +19,7 @@
     "id": "forge_scene3d",
     "title": "FORGE 3D Demo",
     "genre": "Engine-Test",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "desc": "Technik-Demo unserer eigenen Engine FORGE: 3D-Arena mit Hardware-Licht (5 Lichter), Nebel, Texturen mit Mipmaps, geladenem 3D-Modell und echtem Stereo-3D. Circle Pad läuft, L/R dreht die Kamera. Bitte testen, ob alles flüssig läuft!",
     "hours": "Test für das nächste große Spiel"
   },

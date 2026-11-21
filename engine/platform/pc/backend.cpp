@@ -1,6 +1,7 @@
 // FORGE – PC-Backend (headless): Software-Rasterizer, Skript-Eingabe, Screenshots (PPM)
 // Umgebungsvariablen: FORGE_SCRIPT (Eingabe-Skript), FORGE_OUT (Screenshot-Ordner), FORGE_FONT (Glyphen-Atlas),
 //                     FORGE_GFX (Ordner mit <name>.bin-Sheets), FORGE_ROMFS (RomFS-Ersatz), FORGE_SAVE (Spielstände)
+#include <chrono>
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
@@ -318,6 +319,7 @@ static float g_stickX, g_stickY;
 static int g_stickUntil;
 static std::string g_shot;
 u64 nowMs() { return g_clock; }
+double tickMs() { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 
 static void loadScript() {
 	const char *p = getenv("FORGE_SCRIPT");
@@ -405,12 +407,16 @@ int run(App &app, const Config &cfg) {
 	if (f) { if (fread(g_font, 1, sizeof g_font, f)) {} fclose(f); }
 	loadScript();
 	app.init();
+	if (getenv("FORGE_DEBUG")) debug::toggle();
 	const float STEP = 1.0f / 60;
 	Gfx g;
 	while (!app.quit && g_frame < g_quitAt) {
 		float dt = float(STEP * g_speed);
 		if (dt > 0.1f) dt = 0.1f;
 		readInput(dt);
+		const u32 combo = KEY_L | KEY_R | KEY_SELECT;
+		if (cfg.debugCombo && (g_in.held & combo) == combo && (g_in.down & combo)) debug::toggle();
+		double t0 = tickMs();
 		int steps = int(g_speed + 0.5);
 		if (steps < 1) steps = 1;
 		for (int s = 0; s < steps; s++) {
@@ -419,14 +425,17 @@ int run(App &app, const Config &cfg) {
 			g_in.down = g_in.up = 0;
 			g_in.tapped = false;
 		}
+		double t1 = tickMs();
 		cur = &fbTop[0][0]; curW = TOP_W; curH = SCR_H;
 		memset(fbTop, 0, sizeof fbTop);
 		g = Gfx(); g.screen = Screen::Top; g.width = TOP_W;
 		app.draw(g);
+		if (debug::overlayOn()) debug::overlay(g);
 		cur = &fbBot[0][0]; curW = BOT_W; curH = SCR_H;
 		memset(fbBot, 0, sizeof fbBot);
 		g = Gfx(); g.screen = Screen::Bottom; g.width = BOT_W;
 		app.draw(g);
+		debug::frameDone(STEP * 1000, float(t1 - t0), float(tickMs() - t1), 0, steps, 0, 0);
 		if (!g_shot.empty()) { writeShot(g_shot); g_shot.clear(); }
 	}
 	app.suspend();

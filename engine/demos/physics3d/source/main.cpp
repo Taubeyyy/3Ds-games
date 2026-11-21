@@ -139,7 +139,7 @@ public:
 		p3::setPos(lift, Vec3(0, liftY, -9.6f));
 		if (hero.grounded && hero.groundUserId == ID_LIFT) hero.pos.y += dy;
 		// Steuerung relativ zur Kamera
-		Vec2 mv = in.stick;
+		Vec2 mv(in.stick.x, -in.stick.y); // Stick: y nach unten positiv → vorwärts = oben
 		if (in.holding(KEY_DLEFT)) mv.x = -1;
 		if (in.holding(KEY_DRIGHT)) mv.x = 1;
 		if (in.holding(KEY_DUP)) mv.y = 1;
@@ -149,7 +149,7 @@ public:
 		Vec3 wish = (right * mv.x + fwd * mv.y) * 6.0f;
 		if (wish.len() > 0.5f) { heroYaw = atan2f(wish.x, wish.z); bob += dt * 12; }
 		bool wasGrounded = hero.grounded;
-		hero.update(world, wish, in.pressed(KEY_A), dt);
+		{ FORGE_PROFILE("Figur"); hero.update(world, wish, in.pressed(KEY_A), dt); }
 		if (!wasGrounded && hero.grounded) audio::play(sThud, 1.5f, 0.25f);
 		if (hero.vel.y > 8.5f && wasGrounded) audio::play(sJump);
 		if (hero.pos.y < -20) hero.teleport(Vec3(0, 2, 3));
@@ -162,7 +162,7 @@ public:
 		}
 		if (wave >= 0) wave += dt;
 		if (wave > 0.6f) wave = -1;
-		world.step(dt);
+		{ FORGE_PROFILE("Physik"); world.step(dt); }
 		// Aufprall-Geräusche aus Kontakt-Ereignissen
 		const p3::Contact *cs;
 		int nc = world.contacts(&cs);
@@ -250,7 +250,7 @@ public:
 		ui::beginFrame(g);
 		if (g.screen == Screen::Top) {
 			g.rectGrad(0, 0, g.width, g.height, Color(0x5A9AE0), Color(0xA8D0F0), 14);
-			drawScene(g);
+			{ FORGE_PROFILE("3D-Szene"); drawScene(g); }
 			g.rrect(6, 6, 150, 22, 11, Color(0x0A0E2A, 0.7f), Color(0x161C48, 0.7f), -2);
 			g.text(16, 8, 0.45f, Color(0xFFFFFF), "FORGE Physik", ALIGN_LEFT, 0, true, -2);
 			g.text(110, 10, 0.34f, hero.grounded ? Color(0x5AE07A) : Color(0xFFD25A), hero.grounded ? "Boden" : "Luft", ALIGN_LEFT, 0, true, -2);
@@ -259,7 +259,7 @@ public:
 			g.rectGrad(0, 0, BOT_W, SCR_H, Color(0x1A3A58), Color(0x0A1622));
 			g.text(BOT_W / 2, 8, 0.5f, Color(0xFFFFFF), "3D-Physik (Bullet)", ALIGN_CENTER);
 			g.text(BOT_W / 2, 30, 0.34f, Color(0xA8C0D8), "Pad: laufen  ·  A: springen  ·  B: Schockwelle", ALIGN_CENTER);
-			g.text(BOT_W / 2, 44, 0.34f, Color(0xA8C0D8), "L/R oder unten wischen: Kamera", ALIGN_CENTER);
+			g.text(BOT_W / 2, 44, 0.34f, Color(0xA8C0D8), "L/R oder unten wischen: Kamera  ·  L+R+SELECT: Profiler", ALIGN_CENTER);
 			ui::toggle(g, 1, 10, 62, "Physik-Umrisse", debug);
 			ui::button(g, 2, 10, 98, 145, 34, "Neu aufbauen", Color(0x5AE07A));
 			ui::button(g, 3, 165, 98, 145, 34, "Kisten-Regen", Color(0xE8A040));

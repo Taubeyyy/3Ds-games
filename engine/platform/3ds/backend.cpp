@@ -263,6 +263,7 @@ u32 read(const char *name, void *data, size_t size) {
 } // namespace save
 
 u64 nowMs() { return osGetTime(); }
+double tickMs() { return svcGetSystemTick() / double(CPU_TICKS_PER_MSEC); }
 
 // ------------------------------------------------------------------ Eingabe
 static Input g_in;
@@ -351,6 +352,9 @@ int run(App &app, const Config &cfg) {
 		if (dt > 0.1f) dt = 0.1f;
 		acc += dt;
 		readInput(dt);
+		const u32 combo = KEY_L | KEY_R | KEY_SELECT;
+		if (cfg.debugCombo && (g_in.held & combo) == combo && (g_in.down & combo)) debug::toggle();
+		double t0 = tickMs();
 		int steps = 0;
 		while (acc >= STEP && steps < 4) {
 			app.time += STEP;
@@ -361,6 +365,7 @@ int run(App &app, const Config &cfg) {
 			steps++;
 		}
 		if (steps >= 4) acc = 0;
+		double t1 = tickMs();
 		app.stereoSlider = cfg.stereo ? osGet3DSliderState() : 0;
 		C2D_TextBufClear(g_tbuf);
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -375,6 +380,7 @@ int run(App &app, const Config &cfg) {
 			g.eye = app.stereoSlider > 0.01f ? (e ? 1.f : -1.f) : 0;
 			g.stereo = app.stereoSlider;
 			app.draw(g);
+			if (debug::overlayOn()) debug::overlay(g);
 		}
 		C2D_Flush();
 		C3D_RenderTargetClear(bot, C3D_CLEAR_ALL, 0x000000FF, 0);
@@ -382,7 +388,9 @@ int run(App &app, const Config &cfg) {
 		g = Gfx();
 		g.screen = Screen::Bottom; g.width = BOT_W; g.height = SCR_H;
 		app.draw(g);
+		double t2 = tickMs();
 		C3D_FrameEnd(0);
+		debug::frameDone(dt * 1000, float(t1 - t0), float(t2 - t1), C3D_GetDrawingTime(), steps, u32(osGetMemRegionFree(MEMREGION_APPLICATION)), u32(linearSpaceFree()));
 	}
 	app.suspend();
 	if (g_sndOk) ndspExit();
