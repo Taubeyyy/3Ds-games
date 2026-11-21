@@ -14,5 +14,13 @@
     "version": "2.0.0",
     "desc": "Baue eine kosmische Schmiede und fliege selbst los: Steuere dein Bergbau-Schiff durch Asteroidenfelder, baue Erz ab, weiche Minen und Drohnen aus und springe durch 12 Sektoren. Dazu 14 Gebäude, 220+ Upgrades, Aufträge, 20 Artefakte, Supernova und Big Bang.",
     "hours": "Viele Stunden, ideal für lange Fahrten"
+  },
+  {
+    "id": "forge_scene3d",
+    "title": "FORGE 3D Demo",
+    "genre": "Engine-Test",
+    "version": "1.0.0",
+    "desc": "Technik-Demo unserer eigenen Engine FORGE: 3D-Arena mit Hardware-Licht (5 Lichter), Nebel, Texturen mit Mipmaps, geladenem 3D-Modell und echtem Stereo-3D. Circle Pad läuft, L/R dreht die Kamera. Bitte testen, ob alles flüssig läuft!",
+    "hours": "Test für das nächste große Spiel"
   }
 ]

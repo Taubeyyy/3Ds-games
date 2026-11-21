@@ -18,7 +18,11 @@ if [ -z "$1" ]; then
     [ -f "$d/Makefile" ] && { echo "== Demo $(basename "$d")"; make -C "$d" -s >/dev/null; }
   done
 fi
-for dir in games/${1:-*}/; do
+# Spiele + Engine-Demos mit game.cfg (die bekommen auch eine CIA)
+DIRS=""
+for d in games/${1:-*}/ engine/demos/${1:-*}/; do [ -f "$d/game.cfg" ] && DIRS="$DIRS $d"; done
+[ -n "$DIRS" ] || { echo "Nichts gefunden: $1"; exit 1; }
+for dir in $DIRS; do
   g="$(basename "$dir")"
   source "$dir/game.cfg"
   echo "== $TITLE"
