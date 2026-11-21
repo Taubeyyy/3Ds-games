@@ -1,5 +1,5 @@
 # FORGE – gemeinsames 3DS-Makefile. Im Spiel-Makefile: TARGET, APP_TITLE, APP_DESCRIPTION, APP_AUTHOR, ICON setzen,
-# optional GAME_SOURCES (Standard: source), GRAPHICS (gfx), ROMFS, EXTRA_LIBS; danach: include <pfad>/engine/forge.mk
+# optional GAME_SOURCES (Standard: source), GRAPHICS (gfx), ROMFS, EXTRA_LIBS, FORGE_MODULES (physics2d); danach: include <pfad>/engine/forge.mk
 .SUFFIXES:
 ifeq ($(strip $(DEVKITARM)),)
 $(error "DEVKITARM fehlt (devkitPro). Am einfachsten ../../build.sh nutzen")
@@ -11,7 +11,7 @@ include $(DEVKITARM)/3ds_rules
 BUILD        := build
 GAME_SOURCES ?= source
 GRAPHICS     ?= gfx
-ENGINE_SRC   := $(FORGE)/src $(FORGE)/platform/3ds
+ENGINE_SRC   := $(FORGE)/src $(FORGE)/platform/3ds $(foreach m,$(FORGE_MODULES),$(FORGE)/modules/$(m))
 
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 CFLAGS   := -g -Wall -O2 -mword-relocations -ffunction-sections $(ARCH)
@@ -19,7 +19,7 @@ CFLAGS   += $(INCLUDE) -D__3DS__
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 ASFLAGS  := -g $(ARCH)
 LDFLAGS   = -specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-LIBS     := $(EXTRA_LIBS) -lcitro2d -lcitro3d -lctru -lm
+LIBS     := $(EXTRA_LIBS) $(if $(filter physics2d,$(FORGE_MODULES)),-lbox2d) -lcitro2d -lcitro3d -lctru -lm
 LIBDIRS  := $(PORTLIBS) $(CTRULIB)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))

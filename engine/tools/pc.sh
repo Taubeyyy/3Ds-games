@@ -17,8 +17,22 @@ for t in "$GAME"/gfx/*.t3s; do
 	printf 'extern const unsigned char %s_t3x[] = "%s";\nextern const unsigned int %s_t3x_size = sizeof("%s");\n' "$n" "$n" "$n" "$n" >> "$GEN"
 	python3 "$ENG/tools/t3s2bin.py" "$B/gfx" "$t"
 done
-g++ -std=gnu++17 -O2 -w -I"$ENG/include" -I"$GAME/source" -I"$B/gen" \
-	"$GAME"/source/*.cpp $(ls "$ENG"/src/*.cpp 2>/dev/null) "$ENG/platform/pc/backend.cpp" "$GEN" -o "$B/$NAME" -lm
+# Optionale Module aus dem Spiel-Makefile (FORGE_MODULES := ...)
+MODS="$(grep -E '^FORGE_MODULES' "$GAME/Makefile" 2>/dev/null | sed 's/.*=//')"
+MODSRC=""; MODINC=""; MODLIB=""
+for m in $MODS; do
+	MODSRC="$MODSRC $(ls "$ENG"/modules/$m/*.cpp)"
+	if [ "$m" = physics2d ]; then
+		T=/tmp/forge-pc/third/box2d
+		if [ ! -f $T/build-pc/libbox2d.a ]; then
+			mkdir -p /tmp/forge-pc/third && (cd /tmp/forge-pc/third && [ -d box2d ] || git clone -q --depth 1 --branch v2.4.1 https://github.com/erincatto/box2d.git)
+			(cd $T && mkdir -p build-pc && g++ -std=c++11 -O2 -w -Iinclude -Isrc -c $(cd $T && find src -name "*.cpp") && ar rcs build-pc/libbox2d.a *.o && rm -f *.o)
+		fi
+		MODINC="$MODINC -I$T/include"; MODLIB="$MODLIB $T/build-pc/libbox2d.a"
+	fi
+done
+g++ -std=gnu++17 -O2 -w -I"$ENG/include" -I"$GAME/source" -I"$B/gen" $MODINC \
+	"$GAME"/source/*.cpp $(ls "$ENG"/src/*.cpp 2>/dev/null) $MODSRC "$ENG/platform/pc/backend.cpp" "$GEN" -o "$B/$NAME" $MODLIB -lm
 if [ -n "$2" ]; then
 	OUT="${3:-$B/shots}"; mkdir -p "$OUT"
 	FORGE_SCRIPT="$2" FORGE_OUT="$OUT" FORGE_FONT="$B/font.bin" FORGE_GFX="$B/gfx" FORGE_SAVE="$B/save" FORGE_ROMFS="$GAME/romfs-pc" "$B/$NAME"

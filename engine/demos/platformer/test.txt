@@ -1,0 +1,12 @@
+10 stick 1 0 120
+20 key A
+60 key A
+90 shot a_run
+100 key A
+140 stick 1 0 200
+150 key A
+200 key A
+240 shot b_run2
+250 tap 237 213
+256 shot c_debug
+258 quit

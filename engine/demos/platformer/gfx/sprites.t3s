@@ -1,0 +1,8 @@
+--atlas -f rgba8 -z auto
+png/t_grass.png
+png/t_dirt.png
+png/t_stone.png
+png/crate.png
+png/coin.png
+png/hero.png
+png/glow.png
