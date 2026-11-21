@@ -35,6 +35,7 @@
 #define SAVE_VERSION 1
 
 static TD G;
+u32 __stacksize__ = 256 * 1024; // groesserer Stack (Standard: 32 KB)
 static C3D_RenderTarget *tgtTop, *tgtTopR, *tgtBot;
 static C2D_TextBuf tbuf;
 static float T, eyeSign, slider3d;
@@ -355,7 +356,7 @@ static int nDeco;
 static void makeDeco(int map) {
 	srand(1234 + map * 77);
 	nDeco = 0;
-	TD tmp;
+	static TD tmp; // gross -> nicht auf den Stack
 	td_new(&tmp, map, 0);
 	for (int tries = 0; tries < 600 && nDeco < NDECO; tries++) {
 		float x = 10 + frnd() * (FW - 20), y = 10 + frnd() * (FH - 20);
