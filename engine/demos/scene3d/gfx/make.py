@@ -70,3 +70,35 @@ dd.polygon([(24, 8), (40, 18), (40, 32), (24, 42), (8, 32), (8, 18)], outline=(2
 dd.line([(24, 8), (24, 26), (40, 18)], fill=(255, 240, 220), width=2); dd.line([(24, 26), (8, 18)], fill=(255, 240, 220), width=2)
 dd.line([(24, 26), (24, 42)], fill=(255, 240, 220), width=2)
 ic.save(os.path.join(D, "..", "meta", "icon.png"))
+
+# 3D-Modell als OBJ (Quelle) → data/halo.fmesh über tools/meshtool.py
+import math, subprocess
+M = os.path.join(D, "models"); os.makedirs(M, exist_ok=True)
+open(os.path.join(M, "halo.mtl"), "w").write("newmtl gold\nKd 1.0 0.78 0.35\nnewmtl gem\nKd 0.45 0.95 1.0\n")
+V, F = [], []
+def vert(x, y, z):
+    V.append((x, y, z)); return len(V)
+R, r, NS, NR = 1.3, 0.07, 40, 8
+ring = [[vert((R + r * math.cos(b)) * math.cos(a), r * math.sin(b), (R + r * math.cos(b)) * math.sin(a))
+         for b in [2 * math.pi * j / NR for j in range(NR)]] for a in [2 * math.pi * i / NS for i in range(NS)]]
+F.append("usemtl gold")
+for i in range(NS):
+    for j in range(NR):
+        a, b = ring[i][j], ring[(i + 1) % NS][j]
+        c, d = ring[(i + 1) % NS][(j + 1) % NR], ring[i][(j + 1) % NR]
+        F.append("f %d %d %d %d" % (a, d, c, b))
+F.append("usemtl gem"); F.append("s off")
+for k in range(6):
+    a = 2 * math.pi * k / 6
+    cx, cz, s = R * math.cos(a), R * math.sin(a), 0.16
+    top, bot = vert(cx, s * 1.6, cz), vert(cx, -s * 1.6, cz)
+    eq = [vert(cx + s * math.cos(t), 0, cz + s * math.sin(t)) for t in [2 * math.pi * q / 4 for q in range(4)]]
+    for q in range(4):
+        e0, e1 = eq[q], eq[(q + 1) % 4]
+        F.append("f %d %d %d" % (top, e1, e0))
+        F.append("f %d %d %d" % (bot, e0, e1))
+with open(os.path.join(M, "halo.obj"), "w") as f:
+    f.write("mtllib halo.mtl\n" + "".join("v %.4f %.4f %.4f\n" % v for v in V) + "\n".join(F) + "\n")
+os.makedirs(os.path.join(D, "..", "data"), exist_ok=True)
+subprocess.check_call([sys.executable, os.path.join(D, "..", "..", "..", "tools", "meshtool.py"),
+                       os.path.join(M, "halo.obj"), os.path.join(D, "..", "data", "halo.fmesh")])

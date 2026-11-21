@@ -17,6 +17,19 @@ for t in "$GAME"/gfx/*.t3s; do
 	printf 'extern const unsigned char %s_t3x[] = "%s";\nextern const unsigned int %s_t3x_size = sizeof("%s");\n' "$n" "$n" "$n" "$n" >> "$GEN"
 	python3 "$ENG/tools/t3s2bin.py" "$B/gfx" "$t"
 done
+# Eingebettete Daten (data/*): <name>_<ext>.h + Byte-Arrays
+for d in "$GAME"/data/*.*; do
+	[ -f "$d" ] || continue
+	python3 - "$d" "$B/gen" "$GEN" <<'PY'
+import os, sys
+path, gen, out = sys.argv[1:4]
+sym = os.path.basename(path).replace(".", "_").replace("-", "_")
+data = open(path, "rb").read()
+open(os.path.join(gen, sym + ".h"), "w").write("#pragma once\n#include <stdint.h>\nextern const uint8_t %s[];\nextern const uint8_t %s_end[];\nextern const uint32_t %s_size;\n" % (sym, sym, sym))
+with open(out, "a") as f:
+    f.write("#include <stdint.h>\nextern const uint8_t %s[] = {%s};\nextern const uint8_t %s_end[] = {0};\nextern const uint32_t %s_size = %d;\n" % (sym, ",".join(str(b) for b in data) or "0", sym, sym, len(data)))
+PY
+done
 # Optionale Module aus dem Spiel-Makefile (FORGE_MODULES := ...)
 MODS="$(grep -E '^FORGE_MODULES' "$GAME/Makefile" 2>/dev/null | sed 's/.*=//')"
 MODSRC=""; MODINC=""; MODLIB=""

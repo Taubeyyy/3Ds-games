@@ -57,7 +57,8 @@ public:
 	static Mesh sphere(float r, int seg, int rings, Color c);
 	static Mesh plane(Vec2 size, int div, Color c, float uvScale = 1);
 	static Mesh cylinder(float r, float h, int seg, Color c);
-	bool loadFile(const char *path);    // .fmesh aus tools/meshtool.py
+	bool loadMem(const void *data, size_t size); // eingebettete .fmesh (Ordner data/ → <name>_fmesh.h)
+	bool loadFile(const char *path);    // .fmesh aus tools/meshtool.py (auch romfs:/…)
 };
 
 struct Texture3D {

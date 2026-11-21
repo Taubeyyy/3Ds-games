@@ -6,6 +6,7 @@
 #include "sprites_t3x.h"
 #include "floor_t3x.h"
 #include "pillar_t3x.h"
+#include "halo_fmesh.h"
 using namespace forge;
 
 constexpr int NPILLAR = 8, NORB = 3;
@@ -15,7 +16,7 @@ class Scene3DDemo : public App {
 	SpriteSheet sheet;
 	Image glow;
 	Texture3D texFloor, texPillar;
-	Mesh floor, pillar, cap, crystal, body, head, orb, shard;
+	Mesh floor, pillar, cap, crystal, body, head, orb, shard, halo;
 	Camera3D cam;
 	Scene3D scene;
 	Vec3 hero{0, 0, 4};
@@ -39,7 +40,8 @@ public:
 		head = Mesh::sphere(0.26f, 12, 8, Color(0xF0D0B0));
 		orb = Mesh::sphere(0.18f, 10, 6, Color(0xFFFFFF));
 		shard = Mesh::cube(Vec3(0.25f, 0.25f, 0.25f), Color(0xFFFFFF));
-		tris = (floor.ni + NPILLAR * (pillar.ni + cap.ni) + crystal.ni + body.ni + head.ni + NORB * orb.ni) / 3;
+		halo.loadMem(halo_fmesh, halo_fmesh_size); // aus gfx/models/halo.obj via tools/meshtool.py
+		tris = (halo.ni + floor.ni + NPILLAR * (pillar.ni + cap.ni) + crystal.ni + body.ni + head.ni + NORB * orb.ni) / 3;
 		sClick = synth::click();
 		cam.target = hero + Vec3(0, 0.6f, 0);
 		cam.eye = cam.target + Vec3(0, 7.0f, 7.5f);
@@ -145,6 +147,9 @@ public:
 			Material sm; sm.color = Color(0x7AE8FF); sm.emission = Color(0x206080);
 			gfx3d::draw(shard, Mat4::translate(Vec3(cosf(a) * 1.3f, 2.2f + sinf(time * 3 + i) * 0.3f, sinf(a) * 1.3f)) * Mat4::rotY(a * 2) * Mat4::rotX(a), sm);
 		}
+		// Halo (geladenes Modell)
+		Material hm2; hm2.emission = Color(0x302010); hm2.specular = 0.9f; hm2.shininess = 24;
+		gfx3d::draw(halo, Mat4::translate(Vec3(0, 2.2f, 0)) * Mat4::rotY(-time * 0.5f) * Mat4::rotX(0.35f + sinf(time) * 0.1f), hm2);
 		// Held
 		float b = moved > 0 ? fabsf(sinf(bob)) * 0.08f : 0;
 		Mat4 hm = Mat4::translate(hero + Vec3(0, b, 0)) * Mat4::rotY(heroYaw);

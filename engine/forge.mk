@@ -1,5 +1,5 @@
 # FORGE – gemeinsames 3DS-Makefile. Im Spiel-Makefile: TARGET, APP_TITLE, APP_DESCRIPTION, APP_AUTHOR, ICON setzen,
-# optional GAME_SOURCES (Standard: source), GRAPHICS (gfx), ROMFS, EXTRA_LIBS, FORGE_MODULES (physics2d gfx3d); danach: include <pfad>/engine/forge.mk
+# optional GAME_SOURCES (Standard: source), GRAPHICS (gfx), DATA (data: .fmesh/.bin/.wav einbetten), ROMFS, EXTRA_LIBS, FORGE_MODULES (physics2d gfx3d); danach: include <pfad>/engine/forge.mk
 .SUFFIXES:
 ifeq ($(strip $(DEVKITARM)),)
 $(error "DEVKITARM fehlt (devkitPro). Am einfachsten ../../build.sh nutzen")
@@ -11,6 +11,7 @@ include $(DEVKITARM)/3ds_rules
 BUILD        := build
 GAME_SOURCES ?= source
 GRAPHICS     ?= gfx
+DATA         ?= data
 ENGINE_SRC   := $(FORGE)/src $(FORGE)/platform/3ds $(foreach m,$(FORGE_MODULES),$(FORGE)/modules/$(m) $(FORGE)/modules/$(m)/3ds)
 
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
@@ -25,17 +26,18 @@ LIBDIRS  := $(PORTLIBS) $(CTRULIB)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 export OUTPUT   := $(CURDIR)/$(TARGET)
 export TOPDIR   := $(CURDIR)
-export VPATH    := $(foreach d,$(GAME_SOURCES),$(CURDIR)/$(d)) $(ENGINE_SRC) $(foreach d,$(GRAPHICS),$(CURDIR)/$(d))
+export VPATH    := $(foreach d,$(GAME_SOURCES),$(CURDIR)/$(d)) $(ENGINE_SRC) $(foreach d,$(GRAPHICS),$(CURDIR)/$(d)) $(foreach d,$(DATA),$(CURDIR)/$(d))
 export DEPSDIR  := $(CURDIR)/$(BUILD)
 CFILES   := $(foreach d,$(GAME_SOURCES),$(notdir $(wildcard $(d)/*.c))) $(foreach d,$(ENGINE_SRC),$(notdir $(wildcard $(d)/*.c)))
 CPPFILES := $(foreach d,$(GAME_SOURCES),$(notdir $(wildcard $(d)/*.cpp))) $(foreach d,$(ENGINE_SRC),$(notdir $(wildcard $(d)/*.cpp)))
 PICAFILES := $(foreach d,$(GAME_SOURCES),$(notdir $(wildcard $(d)/*.v.pica))) $(foreach d,$(ENGINE_SRC),$(notdir $(wildcard $(d)/*.v.pica)))
+BINFILES := $(foreach d,$(DATA),$(notdir $(wildcard $(d)/*.*)))
 GFXFILES := $(foreach d,$(GRAPHICS),$(notdir $(wildcard $(d)/*.t3s)))
 export LD             := $(CXX)
 export T3XFILES       := $(GFXFILES:.t3s=.t3x)
 export OFILES_SOURCES := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o)
-export OFILES         := $(addsuffix .o,$(T3XFILES)) $(PICAFILES:.v.pica=.shbin.o) $(OFILES_SOURCES)
-export HFILES         := $(addsuffix .h,$(subst .,_,$(T3XFILES))) $(PICAFILES:.v.pica=_shbin.h)
+export OFILES         := $(addsuffix .o,$(BINFILES)) $(addsuffix .o,$(T3XFILES)) $(PICAFILES:.v.pica=.shbin.o) $(OFILES_SOURCES)
+export HFILES         := $(addsuffix .h,$(subst .,_,$(BINFILES))) $(addsuffix .h,$(subst .,_,$(T3XFILES))) $(PICAFILES:.v.pica=_shbin.h)
 export INCLUDE        := $(foreach d,$(GAME_SOURCES),-I$(CURDIR)/$(d)) -I$(FORGE)/include $(foreach d,$(LIBDIRS),-I$(d)/include) -I$(CURDIR)/$(BUILD)
 export LIBPATHS       := $(foreach d,$(LIBDIRS),-L$(d)/lib)
 export APP_ICON       := $(TOPDIR)/$(ICON)
@@ -61,6 +63,16 @@ $(OFILES_SOURCES): $(HFILES)
 	@echo $(notdir $<)
 	@picasso -o $@ $<
 %.shbin.o %_shbin.h: %.shbin
+	@$(bin2o)
+# Eingebettete Daten (Ordner data/): name.ext → name_ext[], name_ext_size
+%.fmesh.o %_fmesh.h: %.fmesh
+	@echo $(notdir $<)
+	@$(bin2o)
+%.bin.o %_bin.h: %.bin
+	@echo $(notdir $<)
+	@$(bin2o)
+%.wav.o %_wav.h: %.wav
+	@echo $(notdir $<)
 	@$(bin2o)
 %.t3x.o %_t3x.h: %.t3x
 	@echo $(notdir $<)

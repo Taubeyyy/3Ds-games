@@ -1,5 +1,6 @@
 // FORGE gfx3d – plattformunabhängig: Matrizen, Grundkörper, Normalen, .fmesh-Laden
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include "forge/gfx3d.hpp"
@@ -160,7 +161,27 @@ Mesh Mesh::cylinder(float r, float h, int seg, Color c) {
 	m.upload();
 	return m;
 }
+bool Mesh::loadMem(const void *data, size_t size) {
+	const u8 *b = (const u8 *)data;
+	u32 hdr[3];
+	if (size < sizeof hdr) return false;
+	memcpy(hdr, b, sizeof hdr);
+	if (hdr[0] != 0x48534D46u || size < sizeof hdr + hdr[1] * sizeof(Vertex3D) + hdr[2] * 2) return false; // 'FMSH'
+	alloc(int(hdr[1]), int(hdr[2]));
+	memcpy(v, b + sizeof hdr, sizeof(Vertex3D) * nv);
+	memcpy(idx, b + sizeof hdr + sizeof(Vertex3D) * nv, 2 * ni);
+	upload();
+	return true;
+}
 bool Mesh::loadFile(const char *path) {
+#ifndef __3DS__
+	char buf[512];
+	if (!strncmp(path, "romfs:/", 7)) {
+		const char *r = getenv("FORGE_ROMFS");
+		snprintf(buf, sizeof buf, "%s/%s", r ? r : "romfs", path + 7);
+		path = buf;
+	}
+#endif
 	FILE *f = fopen(path, "rb");
 	if (!f) return false;
 	u32 hdr[3];
