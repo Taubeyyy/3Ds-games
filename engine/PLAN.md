@@ -54,3 +54,11 @@ games/                   Spiele linken libforge
 ## Leistungsziele
 - 2D: 60 FPS auf Old 3DS mit 500+ Sprites
 - 3D: 30–60 FPS, ca. 5–10k Dreiecke pro Bild auf Old 3DS, mehr auf New 3DS (804 MHz)
+
+## AA-Qualität für das nächste Spiel (Wunsch: „Studio-Vibes“, darf viele MB groß sein)
+- **Assets auf RomFS** statt im Programm: beliebig viele Texturen, Musik und Modelle, nur das Nötige im Speicher (Laden pro Level/Bereich).
+- **Texturformate:** ETC1/ETC1A4 (komprimiert, 4–8x weniger RAM) für große Flächen, RGBA8 für UI und Effekte, Mipmaps für Verkleinerungen.
+- **Art-Pipeline im großen Stil:** mehrere tausend generierte Texturen möglich: Kacheln mit Varianten, Licht und Schatten eingebacken, Normal-Look, Animations-Sheets (Laufen, Angriff, Treffer, Tod), Parallax-Hintergründe in mehreren Ebenen, Umgebungsobjekte in vielen Varianten.
+- **Licht und Effekte:** 2D-Lichter (additives Glühen), Tag/Nacht-Tönung, Partikel-Systeme mit Texturen, Bildschirm-Effekte über Render-Targets (Bloom-Imitat, Blitze, Vignette, Übergänge).
+- **Präsentation:** animiertes Intro, Kamerafahrten, Bildschirmübergänge, Treffer-Stopps, Schütteln, Zahlen-Popups, dynamische Musik (Streaming) und Soundeffekte mit Varianten.
+- **Ziel für das Roguelike:** komplett texturierte Welt, animierte Figuren und Gegner, Bosse mit eigenen Arenen und mehrere Biome.
