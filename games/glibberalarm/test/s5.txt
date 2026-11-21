@@ -1,0 +1,6 @@
+4 shot t1_title
+6 tap 160 47
+14 tap 191 218
+24 tap 72 215
+34 shot t2_card
+36 quit

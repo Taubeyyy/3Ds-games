@@ -25,6 +25,7 @@ static u64 clockMs = 3900000000000ull;
 static double speed = 1;
 static u32 kDown, kHeld, kUp, kPrev;
 static int tx, ty, touchOn;
+static int stickX, stickY, stickUntil;
 static struct { int on, f0, n; float x0, y0, x1, y1; } drag;
 static char shotName[64];
 
@@ -68,6 +69,7 @@ void hidScanInput(void) {
 		else if (!strcmp(e->cmd, "time")) clockMs += (u64)(e->a[0] * 1000);
 		else if (!strcmp(e->cmd, "speed")) speed = e->a[0];
 		else if (!strcmp(e->cmd, "quit")) quitAt = frame;
+		else if (!strcmp(e->cmd, "stick")) { stickX = (int)e->a[0]; stickY = (int)e->a[1]; stickUntil = frame + (int)e->a[2]; }
 	}
 	if (drag.on) {
 		int k = frame - drag.f0;
@@ -302,3 +304,4 @@ void C3D_FrameEnd(int f) {
 	fclose(o);
 	shotName[0] = 0;
 }
+void hidCircleRead(circlePosition *c) { c->dx = frame < stickUntil ? stickX : 0; c->dy = frame < stickUntil ? stickY : 0; }

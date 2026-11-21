@@ -7,8 +7,8 @@ und kann per QR-Code mit **FBI** installiert werden.
 
 | Spiel | Genre | Beschreibung |
 |---|---|---|
-| **Glibberalarm** | Tower Defense | 10 Türme mit je 2 Upgrade-Pfaden (4 Stufen), Glibber die in kleinere zerplatzen, Geister/Panzer/Nachwachsen, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Drag & Drop per Touch. |
-| **Sternenschmiede** | Idle / Incremental | 14 Gebäude, 220+ Upgrades, Meteore, Supernova- und Urknall-Prestige, 6 Prüfungen, 142 Erfolge. Touch-Steuerung, 3D-Effekt, läuft im Standby weiter. |
+| **Goo Alert** | Tower Defense | 10 Türme mit je 2 Upgrade-Pfaden (4 Stufen), Glibber die in kleinere zerplatzen, Geister/Panzer/Nachwachsen, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Drag & Drop per Touch. |
+| **Star Forge** (v2) | Idle + Weltraum-Action | Expeditionen mit eigenem Bergbau-Schiff durch 12 Sektoren (Erz, Minen, Drohnen, Sprungtore), 10 Schiffs-Upgrades, Aufträge, 20 Artefakte. Dazu 14 Gebäude, 220+ Upgrades, Supernova- und Big-Bang-Prestige, 157 Erfolge. |
 
 ## Installation
 
@@ -17,7 +17,7 @@ und kann per QR-Code mit **FBI** installiert werden.
 
 Direkt-QR-Codes:
 
-| Glibberalarm | Sternenschmiede |
+| Goo Alert | Star Forge |
 |---|---|
 | <img src="docs/img/glibberalarm-qr.png" width="200"> | <img src="docs/img/sternenschmiede-qr.png" width="200"> |
 
@@ -44,14 +44,16 @@ Ergebnis liegt in `dist/`. Bei jedem Push auf `main` baut GitHub alles neu und a
 
 ## Entwicklung
 
-Jedes Spiel trennt Logik und Grafik, z. B. bei Glibberalarm:
+Jedes Spiel trennt Logik und Grafik, z. B. bei Goo Alert (`games/glibberalarm`):
 
 - `source/td.c`: Türme, Glibber, Wellen, Karten (ohne 3DS-Abhängigkeiten)
 - `source/main.c`: Grafik, Touch, Sound, Speichern
 - `test/sim.c`: Bot spielt alle Karten und Schwierigkeitsgrade (Balance-Check)
 - `test/shots.sh`: Screenshots am PC
 
-Sternenschmiede:
+Star Forge (`games/sternenschmiede`):
+
+- `source/expedition.c`: Action-Modus (Schiff, Asteroiden, Drohnen)
 
 - `source/game.c`: Spiellogik ohne 3DS-Abhängigkeiten
 - `source/main.c`: Grafik, Touch, Sound, Speichern (citro2d)

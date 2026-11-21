@@ -14,8 +14,8 @@ SOURCES     := source
 DATA        := data
 INCLUDES    := source
 
-APP_TITLE       := Sternenschmiede
-APP_DESCRIPTION := Ein kosmisches Idle-Spiel
+APP_TITLE       := Star Forge
+APP_DESCRIPTION := Kosmisches Idle- und Weltraum-Spiel
 APP_AUTHOR      := 3DS Sammlung
 ICON            := meta/icon.png
 

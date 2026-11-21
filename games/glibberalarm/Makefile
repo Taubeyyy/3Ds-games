@@ -14,8 +14,8 @@ SOURCES     := source
 DATA        := data
 INCLUDES    := source
 
-APP_TITLE       := Glibberalarm
-APP_DESCRIPTION := Tower Defense gegen Glibber
+APP_TITLE       := Goo Alert
+APP_DESCRIPTION := Tower Defense gegen Goo
 APP_AUTHOR      := 3DS Sammlung
 ICON            := meta/icon.png
 

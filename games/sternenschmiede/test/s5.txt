@@ -1,0 +1,23 @@
+3 tap 186 222
+10 shot v_hangar
+12 tap 288 84
+16 tap 268 52
+20 stick 0 150 40
+24 shot w_launch
+60 stick 120 60 60
+100 shot x_fly
+130 stick -60 -150 80
+200 shot y_fly2
+210 tap 40 60
+240 shot z_auto
+250 key START
+262 shot za_result
+264 tap 160 120
+270 tap 293 222
+276 shot zb_more
+278 tap 80 155
+284 shot zc_contracts
+286 tap 30 42
+290 tap 236 155
+296 shot zd_arts
+298 quit

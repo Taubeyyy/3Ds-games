@@ -39,3 +39,5 @@ FILE *shim_fopen(const char *, const char *); int shim_mkdir(const char *, int);
 #define mkdir shim_mkdir
 #define remove shim_remove
 #define rename shim_rename
+typedef struct { s16 dx, dy; } circlePosition;
+void hidCircleRead(circlePosition *);

@@ -1,4 +1,4 @@
-// Glibberalarm - 3DS Frontend (citro2d)
+// Goo Alert (Gooalarm) - 3DS Frontend (citro2d)
 #include <3ds.h>
 #include <citro2d.h>
 #include <math.h>
@@ -820,10 +820,10 @@ static void drawTitleTop(void) {
 		drawEnemy(&e);
 	}
 	float d = -3 * eyeSign * slider3d;
-	const char *t1 = "GLIBBER", *t2 = "ALARM";
+	const char *t1 = "GOO", *t2 = "ALERT";
 	textS(200 + d, 36 + sinf(T * 2) * 3, 1.5f, C(C_SLIME), C2D_AlignCenter, t1);
 	textS(200 + d, 82 + sinf(T * 2 + 1) * 3, 1.5f, C(C_GOLD), C2D_AlignCenter, t2);
-	text(200, 134, 0.5f, C(C_TEXT), C2D_AlignCenter, "Tower Defense gegen Glibber");
+	text(200, 134, 0.5f, C(C_TEXT), C2D_AlignCenter, "Tower Defense gegen Goo");
 }
 
 static void drawMapsTop(void) {
@@ -1094,9 +1094,9 @@ static void drawMapsBottom(void) {
 
 static const char *HELP =
 	"ZIEL\n"
-	"Halte die Glibber auf, bevor sie deine\n"
-	"Basis erreichen. Jeder Glibber kostet\n"
-	"Leben (große Glibber viele!).\n\n"
+	"Halte die Goo auf, bevor sie deine\n"
+	"Basis erreichen. Jeder Goo kostet\n"
+	"Leben (große Goo viele!).\n\n"
 	"TÜRME\n"
 	"Ziehe einen Turm aus der Leiste aufs\n"
 	"Feld oder tippe ihn an und dann aufs\n"
@@ -1104,11 +1104,11 @@ static const char *HELP =
 	"Jeder Turm hat 2 Pfade: einer bis Stufe\n"
 	"4, der andere nur bis Stufe 2.\n\n"
 	"GLIBBER\n"
-	"Glibber zerplatzen in kleinere Glibber.\n"
-	"Geister-Glibber (durchsichtig) sehen\n"
+	"Goo zerplatzen in kleinere Goo.\n"
+	"Geister-Goo (durchsichtig) sehen\n"
 	"nur Eule (Nachtsicht), Pinguin und\n"
 	"Türme beim Dachs (Lauscher).\n"
-	"Panzer-Glibber brauchen Bomben, Säure,\n"
+	"Panzer-Goo brauchen Bomben, Säure,\n"
 	"Blitze oder Upgrades, die Panzer\n"
 	"knacken. Rosa Ring: wächst nach!\n\n"
 	"HONIG\n"
@@ -1164,9 +1164,9 @@ static void startWave(void) {
 		for (int i = 0; i < G.cur.ng; i++)
 			if (G.cur.g[i].type >= E_KOENIG) snprintf(b, sizeof b, "Achtung: %s!", EDEF[G.cur.g[i].type].name);
 		if (!b[0]) {
-			if (G.wave == 20) snprintf(b, sizeof b, "Neu: Geister-Glibber! Du brauchst Sicht.");
-			else if (G.wave == 26) snprintf(b, sizeof b, "Neu: Panzer-Glibber!");
-			else if (G.wave == 33) snprintf(b, sizeof b, "Neu: Nachwachsende Glibber!");
+			if (G.wave == 20) snprintf(b, sizeof b, "Neu: Geister-Goo! Du brauchst Sicht.");
+			else if (G.wave == 26) snprintf(b, sizeof b, "Neu: Panzer-Goo!");
+			else if (G.wave == 33) snprintf(b, sizeof b, "Neu: Nachwachsender Goo!");
 		}
 		if (b[0] || G.wave % 10 == 0 || G.wave == 1) banner(a, b[0] ? b : "Los geht's!");
 	}

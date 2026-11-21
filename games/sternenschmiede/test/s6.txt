@@ -1,0 +1,11 @@
+3 tap 186 222
+10 tap 268 52
+14 speed 3
+16 stick 0 150 30
+46 stick 100 100 50
+96 stick -100 80 60
+150 shot zf_mine1
+156 stick 0 150 40
+200 stick 150 0 60
+260 shot zf_mine2
+262 quit

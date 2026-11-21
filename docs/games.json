@@ -1,18 +1,18 @@
 [
   {
     "id": "glibberalarm",
-    "title": "Glibberalarm",
+    "title": "Goo Alert",
     "genre": "Tower Defense",
-    "version": "1.0.0",
-    "desc": "Stoppe die Glibber! 10 Tier-Türme mit je 2 Upgrade-Pfaden, Glibber die in kleinere zerplatzen, Geister-, Panzer- und Nachwachs-Glibber, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Türme per Touch aufs Feld ziehen.",
+    "version": "1.1.0",
+    "desc": "Stoppe den Goo! 10 Tier-Türme (Spike Hog, Boom Crab, Volt Eel …) mit je 2 Upgrade-Pfaden, Goo der in kleinere zerplatzt, Geister-, Panzer- und Nachwachs-Goo, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Türme per Touch aufs Feld ziehen.",
     "hours": "4 Karten × 3 Stufen, bis zu 80 Wellen"
   },
   {
     "id": "sternenschmiede",
-    "title": "Sternenschmiede",
-    "genre": "Idle / Incremental",
-    "version": "1.0.0",
-    "desc": "Baue eine kosmische Schmiede: 14 Gebäude, über 220 Upgrades, Meteore, Supernova- und Urknall-Prestige, 6 Prüfungen und 142 Erfolge. Touch-Steuerung, 3D-Effekt, läuft im Standby weiter.",
-    "hours": "5+ Stunden bis zum ersten Urknall"
+    "title": "Star Forge",
+    "genre": "Idle + Weltraum-Action",
+    "version": "2.0.0",
+    "desc": "Baue eine kosmische Schmiede und fliege selbst los: Steuere dein Bergbau-Schiff durch Asteroidenfelder, baue Erz ab, weiche Minen und Drohnen aus und springe durch 12 Sektoren. Dazu 14 Gebäude, 220+ Upgrades, Aufträge, 20 Artefakte, Supernova und Big Bang.",
+    "hours": "Viele Stunden, ideal für lange Fahrten"
   }
 ]

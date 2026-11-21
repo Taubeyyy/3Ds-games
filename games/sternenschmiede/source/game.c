@@ -7,59 +7,59 @@
 int g_sci = 0;
 
 const GenDef GEN[NGEN] = {
-	{"Solarzelle", "Fängt Sternenlicht ein.", 15, 0.1, 0xFFD84A},
-	{"Bohrdrohne", "Schürft Erz auf Asteroiden.", 100, 1, 0xB8C4D8},
-	{"Mondmine", "Gräbt tief im Mondgestein.", 1100, 8, 0x9A8CFF},
-	{"Fusionsreaktor", "Verschmilzt Wasserstoff.", 12000, 47, 0x4AD8FF},
-	{"Asteroidenfänger", "Holt ganze Brocken heran.", 130000, 260, 0xFF8A4A},
-	{"Plasmaschmiede", "Schmiedet reines Plasma.", 1.4e6, 1400, 0xFF5AD8},
-	{"Ringwelt", "Eine Welt als Kraftwerk.", 2e7, 7800, 0x6AFF8A},
-	{"Dyson-Schwarm", "Umhüllt einen ganzen Stern.", 3.3e8, 44000, 0xFFB84A},
-	{"Quantenfabrik", "Produziert in allen Zuständen.", 5.1e9, 260000, 0x8AFFFF},
-	{"Sternenheber", "Saugt Materie aus Sonnen.", 7.5e10, 1.6e6, 0xFF6A6A},
-	{"Wurmlochtor", "Energie aus fernen Galaxien.", 1e12, 1e7, 0xB46AFF},
-	{"Galaxienkern", "Ein schwarzes Loch als Motor.", 1.4e13, 6.5e7, 0xF0F0FF},
-	{"Realitätswebstuhl", "Webt Energie aus Naturgesetzen.", 1.7e14, 4.3e8, 0x6AFFD8},
-	{"Multiversum-Anker", "Zapft Paralleluniversen an.", 2.1e15, 2.9e9, 0xFFD8F0},
+	{"Solar Cell", "Fängt Sternenlicht ein.", 15, 0.1, 0xFFD84A},
+	{"Mining Drone", "Schürft Erz auf Asteroiden.", 100, 1, 0xB8C4D8},
+	{"Moon Mine", "Gräbt tief im Mondgestein.", 1100, 8, 0x9A8CFF},
+	{"Fusion Reactor", "Verschmilzt Wasserstoff.", 12000, 47, 0x4AD8FF},
+	{"Asteroid Catcher", "Holt ganze Brocken heran.", 130000, 260, 0xFF8A4A},
+	{"Plasma Forge", "Schmiedet reines Plasma.", 1.4e6, 1400, 0xFF5AD8},
+	{"Ringworld", "Eine Welt als Kraftwerk.", 2e7, 7800, 0x6AFF8A},
+	{"Dyson Swarm", "Umhüllt einen ganzen Stern.", 3.3e8, 44000, 0xFFB84A},
+	{"Quantum Factory", "Produziert in allen Zuständen.", 5.1e9, 260000, 0x8AFFFF},
+	{"Star Lifter", "Saugt Materie aus Sonnen.", 7.5e10, 1.6e6, 0xFF6A6A},
+	{"Wormhole Gate", "Energie aus fernen Galaxien.", 1e12, 1e7, 0xB46AFF},
+	{"Galaxy Core", "Ein schwarzes Loch als Motor.", 1.4e13, 6.5e7, 0xF0F0FF},
+	{"Reality Loom", "Webt Energie aus Naturgesetzen.", 1.7e14, 4.3e8, 0x6AFFD8},
+	{"Multiverse Anchor", "Zapft Paralleluniversen an.", 2.1e15, 2.9e9, 0xFFD8F0},
 };
 
 const PerkDef PERK[NPERK] = {
-	[PK_LIGHT] = {"Urlicht", 1, 1.6, 50, -1, 0},
-	[PK_CLICK] = {"Funkenhand", 1, 2.0, 25, -1, 0},
-	[PK_START] = {"Startkapital", 3, 3, 10, PK_LIGHT, 1},
-	[PK_OFFEFF] = {"Zeitkapsel", 2, 2.2, 5, -1, 0},
-	[PK_OFFCAP] = {"Zeitdehnung", 2, 2.0, 10, PK_OFFEFF, 1},
-	[PK_METFREQ] = {"Meteorschauer", 3, 2.5, 5, -1, 0},
-	[PK_METGOLD] = {"Goldader", 5, 2.5, 5, PK_METFREQ, 1},
-	[PK_COST] = {"Effiziente Baupläne", 10, 5, 4, PK_LIGHT, 3},
-	[PK_AUTOGEN] = {"Drohnenschwarm", 4, 2.0, 14, PK_LIGHT, 1},
-	[PK_AUTOUPG] = {"Schwarmintelligenz", 25, 1, 1, PK_AUTOGEN, 3},
-	[PK_FOUNDATION] = {"Fundament", 4, 2.5, 10, PK_START, 1},
-	[PK_COMBO] = {"Kombo-Meister", 3, 3, 5, PK_CLICK, 2},
-	[PK_DUSTGAIN] = {"Sternenernte", 10, 2.5, 10, PK_LIGHT, 5},
-	[PK_ACHBOOST] = {"Ruhmeshalle", 8, 3, 4, -1, 0},
-	[PK_AUTOCLICK] = {"Geisterhand", 2, 1.8, 20, PK_CLICK, 1},
-	[PK_NETWORK] = {"Sternennetz", 20, 3, 5, PK_DUSTGAIN, 1},
+	[PK_LIGHT] = {"Primordial Light", 1, 1.6, 50, -1, 0},
+	[PK_CLICK] = {"Spark Hand", 1, 2.0, 25, -1, 0},
+	[PK_START] = {"Head Start", 3, 3, 10, PK_LIGHT, 1},
+	[PK_OFFEFF] = {"Time Capsule", 2, 2.2, 5, -1, 0},
+	[PK_OFFCAP] = {"Time Dilation", 2, 2.0, 10, PK_OFFEFF, 1},
+	[PK_METFREQ] = {"Meteor Shower", 3, 2.5, 5, -1, 0},
+	[PK_METGOLD] = {"Gold Vein", 5, 2.5, 5, PK_METFREQ, 1},
+	[PK_COST] = {"Efficient Blueprints", 10, 5, 4, PK_LIGHT, 3},
+	[PK_AUTOGEN] = {"Drone Swarm", 4, 2.0, 14, PK_LIGHT, 1},
+	[PK_AUTOUPG] = {"Hive Mind", 25, 1, 1, PK_AUTOGEN, 3},
+	[PK_FOUNDATION] = {"Foundation", 4, 2.5, 10, PK_START, 1},
+	[PK_COMBO] = {"Combo Master", 3, 3, 5, PK_CLICK, 2},
+	[PK_DUSTGAIN] = {"Star Harvest", 10, 2.5, 10, PK_LIGHT, 5},
+	[PK_ACHBOOST] = {"Hall of Fame", 8, 3, 4, -1, 0},
+	[PK_AUTOCLICK] = {"Ghost Hand", 2, 1.8, 20, PK_CLICK, 1},
+	[PK_NETWORK] = {"Star Network", 20, 3, 5, PK_DUSTGAIN, 1},
 };
 
 const SPerkDef SPERK[NSPERK] = {
-	[SP_PROD] = {"Urkraft", 1, 3, 30},
-	[SP_DUST] = {"Staubstrom", 1, 2, 20},
-	[SP_TIME] = {"Zeitbeschleuniger", 2, 3, 5},
-	[SP_KEEPAUTO] = {"Ewiger Schwarm", 3, 1, 1},
-	[SP_STARTDUST] = {"Sternensaat", 2, 3, 6},
-	[SP_OFFLINE] = {"Ewige Uhr", 2, 1, 1},
-	[SP_MAGNET] = {"Meteormagnet", 3, 1, 1},
-	[SP_CHALX2] = {"Meisterprüfung", 4, 1, 1},
+	[SP_PROD] = {"Primal Force", 1, 3, 30},
+	[SP_DUST] = {"Dust Stream", 1, 2, 20},
+	[SP_TIME] = {"Time Accelerator", 2, 3, 5},
+	[SP_KEEPAUTO] = {"Eternal Swarm", 3, 1, 1},
+	[SP_STARTDUST] = {"Star Seed", 2, 3, 6},
+	[SP_OFFLINE] = {"Eternal Clock", 2, 1, 1},
+	[SP_MAGNET] = {"Meteor Magnet", 3, 1, 1},
+	[SP_CHALX2] = {"Master Trial", 4, 1, 1},
 };
 
 const ChalDef CHAL[NCHAL] = {
-	[CH_NOCLICK] = {"Stille Hände", "Klicks und Geisterhand wirkungslos.", "Klickkraft x10", 1e24},
-	[CH_DARK] = {"Dunkle Materie", "Produktion x0,01.", "Produktion x3", 1e22},
+	[CH_NOCLICK] = {"Silent Hands", "Klicks und Geisterhand wirkungslos.", "Klickkraft x10", 1e24},
+	[CH_DARK] = {"Dark Matter", "Produktion x0,01.", "Produktion x3", 1e22},
 	[CH_INFLATION] = {"Inflation", "Gebäudepreise steigen viel schneller.", "Preisanstieg -0,01", 1e20},
-	[CH_ASCETIC] = {"Asket", "Keine Upgrades kaufbar.", "Upgrades 50% billiger", 1e18},
-	[CH_LONELY] = {"Einsamkeit", "Nur die ersten 7 Gebäude.", "Gebäude 8-14 x5", 1e21},
-	[CH_RUSH] = {"Zündschnur", "Ziel in 15 Minuten erreichen.", "Sternenstaub x2", 1e21},
+	[CH_ASCETIC] = {"Ascetic", "Keine Upgrades kaufbar.", "Upgrades 50% billiger", 1e18},
+	[CH_LONELY] = {"Solitude", "Nur die ersten 7 Gebäude.", "Gebäude 8-14 x5", 1e21},
+	[CH_RUSH] = {"Short Fuse", "Ziel in 15 Minuten erreichen.", "Stardust x2", 1e21},
 };
 
 UpgDef UPG[MAX_UPG];
@@ -75,9 +75,9 @@ int nAch;
 #define RUSH_TIME 900.0
 
 static const int TIER_N[12] = {1, 5, 25, 50, 100, 150, 200, 250, 300, 350, 400, 500};
-static const char *TIER_NAME[12] = {"Feinschliff", "Optimierung", "Überladung", "Kristallgitter",
-	"Quantenkern", "Sternenfeuer", "Nebelweber", "Kosmos-Siegel", "Ewigkeit", "Singularität",
-	"Unendlichkeit", "Allmacht"};
+static const char *TIER_NAME[12] = {"Refined", "Optimized", "Overcharged", "Crystal Lattice",
+	"Quantum Core", "Starfire", "Nebula Weave", "Cosmic Seal", "Eternity", "Singularity",
+	"Infinity", "Omnipotence"};
 static const char *ROMAN[20] = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
 	"XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"};
 
@@ -104,41 +104,41 @@ void game_init_tables(void) {
 	for (int k = 0; k + 1 < NGEN; k++) {
 		UpgDef *u = addU(UT_SYNERGY, RQ_SYN, 15, GEN[k + 1].cost * 150, 0.05);
 		u->gen = k; u->gen2 = k + 1;
-		snprintf(u->name, sizeof u->name, "Verbund %s", ROMAN[k]);
+		snprintf(u->name, sizeof u->name, "Synergy %s", ROMAN[k]);
 	}
 	for (int j = 0; j < 20; j++) {
 		double rq = pow(10, 4 + 2 * j);
 		UpgDef *u = addU(UT_GLOBAL, RQ_EARNED, rq, rq * 0.4, 1.5);
 		u->tier = j;
-		snprintf(u->name, sizeof u->name, "Resonanz %s", ROMAN[j]);
+		snprintf(u->name, sizeof u->name, "Resonance %s", ROMAN[j]);
 	}
 	static const double cr[8] = {1, 50, 200, 500, 1000, 2500, 5000, 10000};
 	static const double cc[8] = {100, 2e3, 1e5, 1e7, 1e9, 1e12, 1e15, 1e19};
 	for (int j = 0; j < 8; j++) {
 		UpgDef *u = addU(UT_CLICK, RQ_CLICKS, cr[j], cc[j], 2);
 		u->tier = j;
-		snprintf(u->name, sizeof u->name, "Funkenfinger %s", ROMAN[j]);
+		snprintf(u->name, sizeof u->name, "Spark Finger %s", ROMAN[j]);
 	}
 	static const double pr[6] = {100, 500, 1500, 4000, 10000, 25000};
 	static const double pc[6] = {1e4, 1e6, 1e8, 1e11, 1e14, 1e18};
 	for (int j = 0; j < 6; j++) {
 		UpgDef *u = addU(UT_CLICKPCT, RQ_CLICKS, pr[j], pc[j], 0.01);
 		u->tier = j;
-		snprintf(u->name, sizeof u->name, "Energiegriff %s", ROMAN[j]);
+		snprintf(u->name, sizeof u->name, "Energy Grip %s", ROMAN[j]);
 	}
 	static const double mr[6] = {1, 3, 10, 25, 60, 120};
 	static const double mc[6] = {1e4, 1e7, 1e10, 1e14, 1e18, 1e23};
 	for (int j = 0; j < 6; j++) {
 		UpgDef *u = addU(UT_METEOR, RQ_METEORS, mr[j], mc[j], 1);
 		u->tier = j;
-		snprintf(u->name, sizeof u->name, "Meteorradar %s", ROMAN[j]);
+		snprintf(u->name, sizeof u->name, "Meteor Radar %s", ROMAN[j]);
 	}
 	static const double kr[4] = {150, 750, 3000, 12000};
 	static const double kc[4] = {1e3, 1e6, 1e10, 1e15};
 	for (int j = 0; j < 4; j++) {
 		UpgDef *u = addU(UT_COMBO, RQ_CLICKS, kr[j], kc[j], 1);
 		u->tier = j;
-		snprintf(u->name, sizeof u->name, "Kombokette %s", ROMAN[j]);
+		snprintf(u->name, sizeof u->name, "Combo Chain %s", ROMAN[j]);
 	}
 
 	nAch = 0;
@@ -166,6 +166,15 @@ void game_init_tables(void) {
 	for (int c = 0; c < NCHAL; c++) addA(AC_CHAL, c, 1);
 	static const double ati[7] = {600, 3600, 3 * 3600, 5 * 3600, 10 * 3600, 24 * 3600, 100 * 3600};
 	for (int j = 0; j < 7; j++) addA(AC_TIME, 0, ati[j]);
+	// v2 (nur anhaengen, damit alte Bits gueltig bleiben)
+	static const double aex[4] = {1, 10, 50, 200};
+	for (int j = 0; j < 4; j++) addA(AC_EXPED, 0, aex[j]);
+	static const double ase[4] = {3, 6, 9, 12};
+	for (int j = 0; j < 4; j++) addA(AC_SECTOR, 0, ase[j]);
+	static const double aar[4] = {1, 5, 10, 20};
+	for (int j = 0; j < 4; j++) addA(AC_ART, 0, aar[j]);
+	static const double aco[3] = {5, 25, 100};
+	for (int j = 0; j < 3; j++) addA(AC_CONTRACT, 0, aco[j]);
 }
 
 // ---------- Hilfen ----------
@@ -275,6 +284,8 @@ void game_recalc(Game *g) {
 	m *= sqrt(1 + s->singTotal);
 	m *= pow(1.5, s->sperk[SP_PROD]);
 	m *= gmul;
+	m *= 1 + art_bonus(g, AK_PROD);
+	m *= refinery_mult(g);
 	if (chal_done(g, CH_DARK)) m *= 1 + 2 * chal_rew(g);
 	if (ch == CH_DARK) m *= 0.01;
 	g->globalMultBase = m;
@@ -302,6 +313,7 @@ void game_recalc(Game *g) {
 
 	double cv = pow(2, s->perk[PK_CLICK]) * cmul + cpct * eps;
 	if (chal_done(g, CH_NOCLICK)) cv *= chal_rew(g) > 1 ? 100 : 10;
+	cv *= 1 + art_bonus(g, AK_CLICK);
 	if (s->buffT[BUFF_CLICKRUSH] > 0) cv *= 77;
 	if (ch == CH_NOCLICK) cv = 0;
 	g->clickVal = cv;
@@ -553,7 +565,7 @@ void game_update(Game *g, double dt) {
 
 double game_offline_eff(Game *g) {
 	if (g->s.sperk[SP_OFFLINE]) return 1.0;
-	double e = 0.5 + 0.1 * g->s.perk[PK_OFFEFF];
+	double e = 0.5 + 0.1 * g->s.perk[PK_OFFEFF] + art_bonus(g, AK_OFFLINE);
 	return e > 1 ? 1 : e;
 }
 double game_offline_cap(Game *g) {
@@ -581,6 +593,7 @@ double dust_mult(Game *g) {
 	Save *s = &g->s;
 	double m = (1 + 0.1 * s->perk[PK_DUSTGAIN]) * (1 + 0.5 * s->sperk[SP_DUST]) * pow(1 + s->singTotal, 0.25);
 	if (chal_done(g, CH_RUSH)) m *= 1 + chal_rew(g);
+	m *= 1 + art_bonus(g, AK_DUST);
 	return m;
 }
 
@@ -635,7 +648,7 @@ void perk_desc(Game *g, int i, char *buf, int n) {
 	case PK_AUTOUPG: snprintf(buf, n, "Kauft Upgrades automatisch."); break;
 	case PK_FOUNDATION: snprintf(buf, n, "Starte mit je %d der ersten 4 Gebäude.", (l + 1) * 10); break;
 	case PK_COMBO: snprintf(buf, n, "Maximale Kombo +1. Jetzt: +%d", l); break;
-	case PK_DUSTGAIN: snprintf(buf, n, "Sternenstaub +10%%. Jetzt: +%d%%", l * 10); break;
+	case PK_DUSTGAIN: snprintf(buf, n, "Stardust +10%%. Jetzt: +%d%%", l * 10); break;
 	case PK_ACHBOOST: snprintf(buf, n, "Erfolge +0,5%% stärker. Jetzt: %.1f%%", 1 + 0.5 * l); break;
 	case PK_AUTOCLICK: snprintf(buf, n, "Automatisch %d Klicks/s.", l + 1); break;
 	case PK_NETWORK: snprintf(buf, n, "+0,2%% Produktion je Gebäude. Jetzt: %.1f%%", 0.2 * l); break;
@@ -684,10 +697,10 @@ void sperk_desc(Game *g, int i, char *buf, int n) {
 	int l = g->s.sperk[i];
 	switch (i) {
 	case SP_PROD: snprintf(buf, n, "Produktion x1,5 je Stufe. Jetzt: x%.1f", pow(1.5, l)); break;
-	case SP_DUST: snprintf(buf, n, "Sternenstaub +50%% je Stufe. Jetzt: +%d%%", 50 * l); break;
+	case SP_DUST: snprintf(buf, n, "Stardust +50%% je Stufe. Jetzt: +%d%%", 50 * l); break;
 	case SP_TIME: snprintf(buf, n, "Spielzeit läuft +10%% schneller. Jetzt: +%d%%", 10 * l); break;
-	case SP_KEEPAUTO: snprintf(buf, n, "Automatik-Konstellationen bleiben beim Urknall."); break;
-	case SP_STARTDUST: snprintf(buf, n, "Starte jeden Urknall mit %d Sternenstaub.", 25 * (l + 1) * (l + 1)); break;
+	case SP_KEEPAUTO: snprintf(buf, n, "Automatik-Konstellationen bleiben beim Big Bang."); break;
+	case SP_STARTDUST: snprintf(buf, n, "Starte jeden Big Bang mit %d Stardust.", 25 * (l + 1) * (l + 1)); break;
 	case SP_OFFLINE: snprintf(buf, n, "Offline 100%% effizient, +24 h Limit."); break;
 	case SP_MAGNET: snprintf(buf, n, "Meteore werden automatisch gefangen."); break;
 	case SP_CHALX2: snprintf(buf, n, "Belohnungen der Prüfungen verdoppelt."); break;
@@ -733,6 +746,10 @@ static bool ach_met(Game *g, int i) {
 	case AC_BANGS: return s->bangs >= a->val;
 	case AC_CHAL: return chal_done(g, a->gen);
 	case AC_TIME: return s->playTime >= a->val;
+	case AC_EXPED: return s->ext.x.expeditions >= a->val;
+	case AC_SECTOR: return s->ext.x.sectorMax >= a->val;
+	case AC_ART: return art_count(g) >= a->val;
+	case AC_CONTRACT: return s->ext.x.contractsDone >= a->val;
 	}
 	return false;
 }
@@ -746,26 +763,30 @@ int ach_check(Game *g) {
 	return -1;
 }
 
-static const char *N_EARN[20] = {"Erster Funke", "Glimmen", "Lagerfeuer", "Leuchtfeuer", "Kleine Sonne",
-	"Sonnenwind", "Sternenglut", "Supergigant", "Quasar", "Pulsar", "Nebelherz", "Galaxie",
-	"Galaxienhaufen", "Superhaufen", "Filament", "Kosmisches Netz", "Unendlich", "Jenseits",
-	"Allwissend", "Schöpfer"};
-static const char *N_EPS[14] = {"Es läuft", "Fließband", "Kraftwerk", "Industrie", "Planetar",
-	"Stellar", "Interstellar", "Galaktisch", "Intergalaktisch", "Kosmisch", "Universell",
-	"Multiversal", "Omniversal", "Absolut"};
-static const char *N_CLICK[8] = {"Erste Berührung", "Fleißiger Finger", "Klickfreude", "Tausendsassa",
-	"Daueraufgabe", "Sehnenscheide", "Unermüdlich", "Touchscreen-Legende"};
-static const char *N_GENL[4] = {"Anfang", "Sammler", "Meister", "Legende"};
-static const char *N_TOT[6] = {"Siedlung", "Kolonie", "Imperium", "Zivilisation", "Hegemonie", "Ewiges Reich"};
-static const char *N_MET[6] = {"Sternschnuppe", "Meteorjäger", "Kometenfänger", "Himmelsfischer",
-	"Sternenregen", "Meteorkönig"};
-static const char *N_NOVA[6] = {"Erste Explosion", "Feuerwerk", "Sternentod", "Wiedergeburt",
-	"Zyklus", "Ewige Wiederkehr"};
-static const char *N_UPG[6] = {"Tüftler", "Ingenieur", "Erfinder", "Visionär", "Genie", "Allwissend"};
-static const char *N_COMBO[4] = {"Rhythmus", "Im Fluss", "Raserei", "Ekstase"};
-static const char *N_BANG[3] = {"Urknall", "Neue Universen", "Weltenschmied"};
-static const char *N_TIME[7] = {"Reinschnuppern", "Eine Stunde", "Ausdauer", "Zugfahrer",
-	"Sitzfleisch", "Ein ganzer Tag", "Hundert Stunden"};
+static const char *N_EARN[20] = {"First Spark", "Glimmer", "Campfire", "Beacon", "Little Sun",
+	"Solar Wind", "Star Glow", "Supergiant", "Quasar", "Pulsar", "Nebula Heart", "Galaxy",
+	"Galaxy Cluster", "Supercluster", "Filament", "Cosmic Web", "Infinite", "Beyond",
+	"Omniscient", "Creator"};
+static const char *N_EPS[14] = {"It Runs", "Assembly Line", "Power Plant", "Industry", "Planetary",
+	"Stellar", "Interstellar", "Galactic", "Intergalactic", "Cosmic", "Universal",
+	"Multiversal", "Omniversal", "Absolute"};
+static const char *N_CLICK[8] = {"First Touch", "Busy Finger", "Click Happy", "Jack of Taps",
+	"Daily Grind", "Tendon Strain", "Tireless", "Touchscreen Legend"};
+static const char *N_GENL[4] = {"Beginner", "Collector", "Master", "Legend"};
+static const char *N_TOT[6] = {"Settlement", "Colony", "Empire", "Civilization", "Hegemony", "Eternal Realm"};
+static const char *N_MET[6] = {"Shooting Star", "Meteor Hunter", "Comet Catcher", "Sky Fisher",
+	"Star Rain", "Meteor King"};
+static const char *N_NOVA[6] = {"First Blast", "Fireworks", "Star Death", "Rebirth",
+	"Cycle", "Eternal Return"};
+static const char *N_UPG[6] = {"Tinkerer", "Engineer", "Inventor", "Visionary", "Genius", "Mastermind"};
+static const char *N_COMBO[4] = {"Rhythm", "In the Flow", "Frenzy", "Ecstasy"};
+static const char *N_BANG[3] = {"Big Bang", "New Universes", "World Smith"};
+static const char *N_TIME[7] = {"Taste Test", "One Hour", "Endurance", "Train Rider",
+	"Iron Butt", "A Whole Day", "Hundred Hours"};
+static const char *N_EXP[4] = {"Liftoff", "Space Miner", "Belt Veteran", "Void Walker"};
+static const char *N_SEC[4] = {"Gate Crasher", "Deep Space", "Abyss", "Edge of Reality"};
+static const char *N_ART[4] = {"Relic Hunter", "Curator", "Archaeologist", "Museum of Stars"};
+static const char *N_CON[3] = {"Contractor", "Reliable", "Legendary Agent"};
 
 void ach_text(int i, char *nm, int nn, char *ds, int nd) {
 	AchDef *a = &ACH[i];
@@ -783,8 +804,12 @@ void ach_text(int i, char *nm, int nn, char *ds, int nd) {
 	case AC_NOVAS: snprintf(nm, nn, "%s", N_NOVA[k]); snprintf(ds, nd, "Löse %s Supernovas aus.", v); break;
 	case AC_UPGS: snprintf(nm, nn, "%s", N_UPG[k]); snprintf(ds, nd, "Besitze %s Upgrades gleichzeitig.", v); break;
 	case AC_COMBO: snprintf(nm, nn, "%s", N_COMBO[k]); snprintf(ds, nd, "Erreiche eine Kombo von x%s.", v); break;
-	case AC_BANGS: snprintf(nm, nn, "%s", N_BANG[k]); snprintf(ds, nd, "Löse %s Urknall aus.", v); break;
-	case AC_CHAL: snprintf(nm, nn, "Prüfung: %s", CHAL[a->gen].name); snprintf(ds, nd, "Meistere \"%s\".", CHAL[a->gen].name); break;
+	case AC_BANGS: snprintf(nm, nn, "%s", N_BANG[k]); snprintf(ds, nd, "Löse %s Big Bang aus.", v); break;
+	case AC_CHAL: snprintf(nm, nn, "Trial: %s", CHAL[a->gen].name); snprintf(ds, nd, "Meistere \"%s\".", CHAL[a->gen].name); break;
+	case AC_EXPED: snprintf(nm, nn, "%s", N_EXP[k]); snprintf(ds, nd, "Schließe %s Expeditionen ab.", v); break;
+	case AC_SECTOR: snprintf(nm, nn, "%s", N_SEC[k]); snprintf(ds, nd, "Erreiche Sektor %s.", v); break;
+	case AC_ART: snprintf(nm, nn, "%s", N_ART[k]); snprintf(ds, nd, "Finde %s Artefakte.", v); break;
+	case AC_CONTRACT: snprintf(nm, nn, "%s", N_CON[k]); snprintf(ds, nd, "Erfülle %s Aufträge.", v); break;
 	case AC_TIME: {
 		char t[32]; fmt_time(a->val, t, sizeof t);
 		snprintf(nm, nn, "%s", N_TIME[k]); snprintf(ds, nd, "Spiele insgesamt %s.", t); break; }
@@ -831,4 +856,168 @@ void fmt_time(double sec, char *buf, int n) {
 	else if (s < 3600) snprintf(buf, n, "%ld min %02ld s", s / 60, s % 60);
 	else if (s < 86400) snprintf(buf, n, "%ld h %02ld min", s / 3600, (s / 60) % 60);
 	else snprintf(buf, n, "%ld T %ld h", s / 86400, (s / 3600) % 24);
+}
+
+// ---------- v2: Erze, Artefakte, Auftraege
+const OreDef ORE[NORE] = {
+	{"Ferrite", 0xB8A890, 1, 4},
+	{"Cobalt", 0x4A8AFF, 3, 10},
+	{"Luminite", 0x5AFFC8, 8, 25},
+	{"Voidstone", 0xB45AFF, 20, 60},
+	{"Starheart", 0xFFD25A, 60, 150},
+};
+
+const ArtDef ART[NART] = {
+	{"Ancient Lens", AK_PROD, 0.15f}, {"Void Crystal", AK_CLICK, 0.5f}, {"Comet Heart", AK_PROD, 0.15f},
+	{"Star Compass", AK_LASER, 0.25f}, {"Frozen Time", AK_OFFLINE, 0.1f}, {"Dust Crown", AK_DUST, 0.15f},
+	{"Nebula Pearl", AK_PROD, 0.15f}, {"Titan Gear", AK_CARGO, 0.25f}, {"Quantum Die", AK_PROD, 0.15f},
+	{"Solar Feather", AK_CLICK, 0.5f}, {"Echo Stone", AK_DUST, 0.15f}, {"Dark Prism", AK_PROD, 0.2f},
+	{"Pulsar Ring", AK_LASER, 0.25f}, {"Moon Idol", AK_OFFLINE, 0.1f}, {"Rift Key", AK_PROD, 0.2f},
+	{"Graviton Seed", AK_CARGO, 0.25f}, {"Phoenix Ash", AK_DUST, 0.2f}, {"Chrono Shard", AK_PROD, 0.25f},
+	{"Galaxy Egg", AK_CLICK, 1.0f}, {"Omega Relic", AK_PROD, 0.5f},
+};
+
+bool art_has(Game *g, int i) { return (g->s.ext.x.artifacts >> i) & 1; }
+int art_count(Game *g) {
+	int n = 0;
+	for (int i = 0; i < NART; i++) n += art_has(g, i);
+	return n;
+}
+float art_bonus(Game *g, int kind) {
+	float b = 0;
+	for (int i = 0; i < NART; i++) if (art_has(g, i) && ART[i].kind == kind) b += ART[i].val;
+	return b;
+}
+void art_desc(int i, char *b, int n) {
+	int v = (int)(ART[i].val * 100 + 0.5f);
+	switch (ART[i].kind) {
+	case AK_PROD: snprintf(b, n, "Produktion +%d%%", v); break;
+	case AK_CLICK: snprintf(b, n, "Klickkraft +%d%%", v); break;
+	case AK_OFFLINE: snprintf(b, n, "Offline-Effizienz +%d%%", v); break;
+	case AK_DUST: snprintf(b, n, "Stardust +%d%%", v); break;
+	case AK_LASER: snprintf(b, n, "Schiffslaser +%d%%", v); break;
+	case AK_CARGO: snprintf(b, n, "Laderaum +%d%%", v); break;
+	}
+}
+
+double refinery_mult(Game *g) { return 1 + 0.25 * log10(1 + g->s.ext.x.oreValueTotal); }
+
+static double nice(double v) {
+	if (v < 10) return ceil(v);
+	double p = pow(10, floor(log10(v)) - 1);
+	return ceil(v / p) * p;
+}
+
+static double ct_value(Game *g, int k) {
+	Save *s = &g->s;
+	int arg = s->ext.x.contract[k].arg;
+	switch (s->ext.x.contract[k].type) {
+	case CT_OWN_GEN: return s->gens[arg];
+	case CT_EARN: return s->lifeEarned;
+	case CT_CLICKS: return s->clicksLife;
+	case CT_METEORS: return s->meteorsLife;
+	case CT_ORE: return s->ext.x.oreTotal[arg];
+	case CT_SECTOR: return s->ext.x.sectorMax;
+	case CT_EXPED: return s->ext.x.expeditions;
+	}
+	return 0;
+}
+
+static void ct_new(Game *g, int k) {
+	Save *s = &g->s;
+	typeof(s->ext.x.contract[0]) *c = &s->ext.x.contract[k];
+	memset(c, 0, sizeof *c);
+	int types[8], nt = 0;
+	types[nt++] = CT_OWN_GEN;
+	types[nt++] = CT_EARN;
+	types[nt++] = CT_CLICKS;
+	types[nt++] = CT_EXPED;
+	types[nt++] = CT_ORE;
+	if (s->clicksLife > 50) types[nt++] = CT_METEORS;
+	if (s->ext.x.sectorMax < 12 && s->ext.x.expeditions > 0) types[nt++] = CT_SECTOR;
+	// keine doppelten Typen
+	int t = CT_EARN;
+	for (int tries = 0; tries < 20; tries++) {
+		t = types[(int)(frand() * nt) % nt];
+		bool dup = false;
+		for (int j = 0; j < 3; j++) if (j != k && s->ext.x.contract[j].type == t) dup = true;
+		if (!dup) break;
+	}
+	c->type = t;
+	double lvl = 1 + s->ext.x.sectorMax + log10(1 + s->lifeEarned) * 0.5;
+	switch (t) {
+	case CT_OWN_GEN: {
+		int hi = 0;
+		for (int i = 0; i < NGEN; i++) if (s->gens[i] > 0) hi = i;
+		if (frand() < 0.4 && hi + 1 < NGEN && s->gens[hi] >= 5) hi++;
+		c->arg = hi;
+		c->target = s->gens[hi] + 5 + (int)(frand() * 4) * 5;
+		break;
+	}
+	case CT_EARN: c->target = nice(fmax(2000, g->epsBase * (300 + frand() * 600))); break;
+	case CT_CLICKS: c->target = 100 + (int)(frand() * 5) * 50; break;
+	case CT_METEORS: c->target = 2 + (int)(frand() * 3); break;
+	case CT_EXPED: c->target = 1 + (int)(frand() * 2); break;
+	case CT_ORE: {
+		int maxOre = s->ext.x.sectorMax >= 6 ? 4 : s->ext.x.sectorMax >= 4 ? 3 : s->ext.x.sectorMax >= 2 ? 2 : 1;
+		c->arg = (int)(frand() * (maxOre + 1)) % (maxOre + 1);
+		c->target = nice(25 + frand() * 40) / (1 + c->arg * 0.6);
+		c->target = ceil(c->target);
+		break;
+	}
+	case CT_SECTOR: c->target = s->ext.x.sectorMax + 1; break;
+	}
+	c->start = (t == CT_OWN_GEN || t == CT_SECTOR) ? 0 : ct_value(g, k);
+	c->reward = nice(15 * pow(lvl, 1.4) * (0.8 + frand() * 0.4));
+}
+
+void contract_fill(Game *g) {
+	for (int k = 0; k < 3; k++)
+		if (g->s.ext.x.contract[k].type == CT_NONE) ct_new(g, k);
+}
+
+double contract_progress(Game *g, int k, double *target) {
+	*target = g->s.ext.x.contract[k].target;
+	double v = ct_value(g, k) - g->s.ext.x.contract[k].start;
+	return v < 0 ? 0 : v;
+}
+
+int contracts_ready(Game *g) {
+	int n = 0;
+	for (int k = 0; k < 3; k++) {
+		double t;
+		if (g->s.ext.x.contract[k].type && contract_progress(g, k, &t) >= t) n++;
+	}
+	return n;
+}
+
+void contract_text(Game *g, int k, char *b, int n) {
+	typeof(g->s.ext.x.contract[0]) *c = &g->s.ext.x.contract[k];
+	char v[32];
+	fmt_num(c->target, v, sizeof v);
+	switch (c->type) {
+	case CT_OWN_GEN: snprintf(b, n, "Besitze %s %s", v, GEN[c->arg].name); break;
+	case CT_EARN: snprintf(b, n, "Verdiene %s Energie", v); break;
+	case CT_CLICKS: snprintf(b, n, "Tippe %s Mal auf den Kern", v); break;
+	case CT_METEORS: snprintf(b, n, "Fange %s Meteore", v); break;
+	case CT_ORE: snprintf(b, n, "Baue %s %s ab", v, ORE[c->arg].name); break;
+	case CT_SECTOR: snprintf(b, n, "Erreiche Sektor %s", v); break;
+	case CT_EXPED: snprintf(b, n, "Fliege %s Expedition%s", v, c->target > 1 ? "en" : ""); break;
+	default: b[0] = 0;
+	}
+}
+
+bool contract_claim(Game *g, int k, double *energyOut, double *alloyOut) {
+	double t;
+	if (!g->s.ext.x.contract[k].type || contract_progress(g, k, &t) < t) return false;
+	double al = g->s.ext.x.contract[k].reward;
+	double en = fmax(g->epsBase, 5) * 600;
+	g->s.ext.x.alloy += al;
+	g->s.energy += en; g->s.runEarned += en; g->s.lifeEarned += en; g->s.bangEarned += en;
+	g->s.ext.x.contractsDone += 1;
+	*energyOut = en;
+	*alloyOut = al;
+	ct_new(g, k);
+	game_recalc(g);
+	return true;
 }

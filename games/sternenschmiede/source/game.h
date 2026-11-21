@@ -53,7 +53,7 @@ typedef struct {
 	double goal;
 } ChalDef;
 
-enum { AC_EARNED, AC_EPS, AC_CLICKS, AC_GEN, AC_METEORS, AC_NOVAS, AC_UPGS, AC_COMBO, AC_BANGS, AC_CHAL, AC_TIME, AC_TOTALGEN };
+enum { AC_EARNED, AC_EPS, AC_CLICKS, AC_GEN, AC_METEORS, AC_NOVAS, AC_UPGS, AC_COMBO, AC_BANGS, AC_CHAL, AC_TIME, AC_TOTALGEN, AC_EXPED, AC_SECTOR, AC_ART, AC_CONTRACT };
 typedef struct {
 	uint8_t cat, gen;
 	double val;
@@ -63,7 +63,7 @@ enum { BUFF_FRENZY, BUFF_CLICKRUSH, NBUFF };
 
 // Spielstand (fest dimensioniert -> spaetere Erweiterungen bleiben kompatibel)
 #define SAVE_MAGIC 0x53544E53u
-#define SAVE_VERSION 1
+#define SAVE_VERSION 2
 typedef struct {
 	uint32_t magic, version;
 	double energy, runEarned, lifeEarned, bangEarned;
@@ -83,7 +83,19 @@ typedef struct {
 	uint64_t lastSave; // ms
 	double buffT[8];
 	uint8_t autoGen, autoUpg, sciNotation, sound, stereo, buyMode, autoClickOn, pad;
-	double reserved[64];
+	// v2: Erweiterungen im frueheren Reservebereich (gleiche Groesse -> v1-Saves bleiben gueltig)
+	union {
+		struct {
+			double alloy, oreTotal[8], oreValueTotal;
+			uint8_t ship[16];
+			uint32_t artifacts;
+			uint8_t sectorMax, expTutorial, pad[2];
+			double expeditions;
+			struct { uint8_t type, arg, done, pad; float pad2; double target, start, reward; } contract[3];
+			double contractsDone;
+		} x;
+		double reserved[64];
+	} ext;
 } Save;
 
 enum { EV_ACH, EV_METEOR, EV_METEOR_AUTO, EV_CHAL_DONE, EV_CHAL_FAIL };
@@ -169,3 +181,26 @@ int ach_check(Game *g); // gibt neuen Erfolg zurueck oder -1
 
 void fmt_num(double v, char *buf, int n);
 void fmt_time(double sec, char *buf, int n);
+
+// ---------- v2: Erze, Artefakte, Auftraege
+#define NORE 5
+enum { ORE_FERRITE, ORE_COBALT, ORE_LUMINITE, ORE_VOIDSTONE, ORE_STARHEART };
+typedef struct { const char *name; uint32_t color; double alloy, energySec; } OreDef;
+extern const OreDef ORE[NORE];
+
+#define NART 20
+enum { AK_PROD, AK_CLICK, AK_OFFLINE, AK_DUST, AK_LASER, AK_CARGO };
+typedef struct { const char *name; int kind; float val; } ArtDef;
+extern const ArtDef ART[NART];
+bool art_has(Game *g, int i);
+float art_bonus(Game *g, int kind);
+int art_count(Game *g);
+void art_desc(int i, char *b, int n);
+
+enum { CT_NONE, CT_OWN_GEN, CT_EARN, CT_CLICKS, CT_METEORS, CT_ORE, CT_SECTOR, CT_EXPED, NCT };
+void contract_fill(Game *g);
+double contract_progress(Game *g, int k, double *target);
+void contract_text(Game *g, int k, char *b, int n);
+bool contract_claim(Game *g, int k, double *energyOut, double *alloyOut);
+int contracts_ready(Game *g);
+double refinery_mult(Game *g);

@@ -1,0 +1,6 @@
+4 shot zz_core
+6 tap 133 222
+12 shot zz_upg
+14 tap 240 222
+20 shot zz_stars
+22 quit

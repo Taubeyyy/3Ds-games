@@ -1,4 +1,4 @@
-// Sternenschmiede - 3DS Frontend (citro2d)
+// Star Forge (Sternenschmiede) - 3DS Frontend (citro2d)
 #include <3ds.h>
 #include <citro2d.h>
 #include <math.h>
@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "game.h"
+#include "expedition.h"
 
 #define TW 400
 #define BW 320
@@ -36,6 +37,7 @@
 #define SAVE_BAK SAVE_DIR "/save.bak"
 
 static Game G;
+u32 __stacksize__ = 256 * 1024; // groesserer Stack (Standard: 32 KB)
 static C3D_RenderTarget *tgtTop, *tgtTopR, *tgtBot;
 static C2D_TextBuf tbuf;
 static float T;           // laufende Zeit
@@ -137,6 +139,11 @@ static void textWrap(float x, float y, float sz, u32 col, float w, const char *s
 	C2D_DrawText(&t, C2D_WithColor | C2D_WordWrap, x, y, 0, sz, sz, col, w);
 }
 static void num(double v, char *b) { fmt_num(v, b, 32); }
+static void textS(float x, float y, float sz, u32 col, int align, const char *s) {
+	C2D_Text t = mk(s);
+	C2D_DrawText(&t, C2D_WithColor | align, x + 1, y + 1, 0, sz, sz, RGBA(0x000000, 0.7f));
+	C2D_DrawText(&t, C2D_WithColor | align, x, y, 0, sz, sz, col);
+}
 
 // ============================================================ Partikel & Effekte
 typedef struct { float x, y, vx, vy, life, max, size; u32 col; u8 top; } Particle;
@@ -330,13 +337,15 @@ static void onAptHook(APT_HookType hook, void *param) {
 }
 
 // ============================================================ UI-Zustand
-enum { P_CORE, P_BUILD, P_UPG, P_STARS, P_MORE, P_ACH, P_STATS, P_BANG, P_CHAL, P_OPT, P_HELP, NPAGE };
+enum { P_CORE, P_BUILD, P_UPG, P_HANGAR, P_STARS, P_MORE, P_ACH, P_STATS, P_BANG, P_CHAL, P_OPT, P_HELP, P_CONTRACTS, P_ARTS, NPAGE };
 static int tab, page;
 static float scrollY[NPAGE], scrollV[NPAGE], scrollMax[NPAGE];
 static int upgSel = -1;
 
 enum { A_NONE, A_TAB, A_CRYSTAL, A_METEOR, A_BUYMODE, A_GEN, A_UPGSEL, A_UPGBUY, A_UPGALL, A_NOVA, A_PERK,
-	A_MENU, A_BACK, A_BANG, A_SPERK, A_CHAL, A_OPT, A_YES, A_NO, A_ACHSEL };
+	A_MENU, A_BACK, A_BANG, A_SPERK, A_CHAL, A_OPT, A_YES, A_NO, A_ACHSEL, A_RADAR, A_EXPRET, A_HSTART, A_HSEC, A_SHIPUP, A_CLAIM };
+static void drawToast(void);
+static void drawModal(void);
 typedef struct { float x, y, w, h; int act, p; } Hit;
 #define NHIT 160
 static Hit hits[NHIT];
@@ -410,7 +419,7 @@ static void doNova(void) {
 	upgSel = -1;
 	char b[32];
 	num(gain, b);
-	toast(C_GOLD, "SUPERNOVA!", "+%s Sternenstaub", b);
+	toast(C_GOLD, "SUPERNOVA!", "+%s Stardust", b);
 	play(SND_NOVA, 1, 0.9f);
 	burst(1, 200, 136, 60, 260, C_GOLD);
 }
@@ -421,7 +430,7 @@ static void doBang(void) {
 	upgSel = -1;
 	char b[32];
 	num(gain, b);
-	toast(C_PURPLE, "URKNALL!", "+%s Singularitäten. Ein neues Universum entsteht.", b);
+	toast(C_PURPLE, "BIG BANG!", "+%s Singularities. Ein neues Universum entsteht.", b);
 	play(SND_NOVA, 0.7f, 1.0f);
 	burst(1, 200, 136, 90, 320, C_PURPLE);
 }
@@ -651,11 +660,11 @@ static void drawTop(void) {
 		rect(8, 236, 384 * pr, 2, C(C_RED));
 	} else if (bang_ready(&G)) {
 		num(bang_gain(&G), b);
-		snprintf(st, sizeof st, "Urknall möglich: +%s Singularitäten", b);
+		snprintf(st, sizeof st, "Big Bang möglich: +%s Singularities", b);
 		stc = C_PURPLE;
 	} else if (nova_gain(&G) >= 1) {
 		num(nova_gain(&G), b);
-		snprintf(st, sizeof st, "Supernova bereit: +%s Sternenstaub", b);
+		snprintf(st, sizeof st, "Supernova bereit: +%s Stardust", b);
 		stc = C_GOLD;
 	} else {
 		int nx = -1;
@@ -679,18 +688,7 @@ static void drawTop(void) {
 	if (G.s.buffT[BUFF_FRENZY] > 0) textf(px(bx, -0.5f), 220, 0.42f, C(C_PINK), C2D_AlignRight, "Fieber x7 %.0fs", G.s.buffT[BUFF_FRENZY]);
 	if (saveFlash > 0) text(px(TW - 8, -0.5f), 200, 0.38f, RGBA(C_GREEN, fminf(1, saveFlash)), C2D_AlignRight, "Gespeichert");
 
-	// Toast
-	if (toastTail != toastHead) {
-		Toast *t = &toasts[toastTail];
-		float in = fminf(1, toastT * 5), out = fminf(1, (3.0f - toastT) * 5);
-		float a = fminf(in, out);
-		float y = 168 + (1 - a) * 20;
-		float w = 300;
-		rrect(px(50, -2), y, w, 40, 8, RGBA(darken(t->col, 0.7f), 0.92f * a));
-		rect(px(50, -2) + 8, y, w - 16, 2, RGBA(t->col, a));
-		textFit(px(200, -2), y + 3, 0.5f, RGBA(t->col, a), C2D_AlignCenter, w - 16, t->title);
-		textFit(px(200, -2), y + 21, 0.4f, RGBA(C_TEXT, a), C2D_AlignCenter, w - 16, t->msg);
-	}
+	drawToast();
 	// Blitze
 	if (novaFlash > 0) {
 		float p = 1 - novaFlash / 2.0f;
@@ -1047,31 +1045,34 @@ static void pageStars(void) {
 }
 
 static void pageMore(void) {
-	static const char *lbl[6] = {"Erfolge", "Statistik", "Urknall", "Prüfungen", "Optionen", "Hilfe"};
-	static const int pg[6] = {P_ACH, P_STATS, P_BANG, P_CHAL, P_OPT, P_HELP};
-	static const u32 col[6] = {C_GOLD, C_CYAN, C_PURPLE, C_RED, C_GREEN, C_DIM};
-	for (int k = 0; k < 6; k++) {
-		float x = 8 + (k % 2) * 156, y = 36 + (k / 2) * 57;
+	static const char *lbl[8] = {"Erfolge", "Statistik", "Big Bang", "Prüfungen", "Aufträge", "Artefakte", "Optionen", "Hilfe"};
+	static const int pg[8] = {P_ACH, P_STATS, P_BANG, P_CHAL, P_CONTRACTS, P_ARTS, P_OPT, P_HELP};
+	static const u32 col[8] = {C_GOLD, C_CYAN, C_PURPLE, C_RED, C_GREEN, C_GOLD, C_GREEN, C_DIM};
+	for (int k = 0; k < 8; k++) {
+		float x = 8 + (k % 2) * 156, y = 34 + (k / 2) * 43;
 		bool locked = (k == 2 && G.s.bangs < 1 && !bang_ready(&G) && G.s.novas < 3) || (k == 3 && G.s.bangs < 1);
-		panel(x, y, 148, 51, 9, locked ? 0x10142E : C_PANEL, locked ? 0x1C2350 : darken(col[k], 0.4f));
-		rect(x + 10, y + 46, 128, 2, C(locked ? 0x1C2350 : col[k]));
-		textFit(x + 74, y + 6, 0.52f, C(locked ? 0x4A5280 : C_TEXT), C2D_AlignCenter, 136, lbl[k]);
+		panel(x, y, 148, 39, 8, locked ? 0x10142E : C_PANEL, locked ? 0x1C2350 : darken(col[k], 0.4f));
+		rect(x + 10, y + 35, 128, 2, C(locked ? 0x1C2350 : col[k]));
+		textFit(x + 74, y + 2, 0.48f, C(locked ? 0x4A5280 : C_TEXT), C2D_AlignCenter, 136, lbl[k]);
 		char s[48] = "";
 		if (k == 0) snprintf(s, sizeof s, "%d / %d", ach_count(&G), nAch);
 		if (k == 1) { fmt_time(G.s.playTime, s, sizeof s); }
 		if (k == 2) {
 			if (locked) snprintf(s, sizeof s, "Nach 3 Supernovas");
 			else if (bang_ready(&G)) snprintf(s, sizeof s, "BEREIT!");
-			else { char b[32]; num(G.s.sing, b); snprintf(s, sizeof s, "%s Singularitäten", b); }
+			else { char b[32]; num(G.s.sing, b); snprintf(s, sizeof s, "%s Singularities", b); }
 		}
 		if (k == 3) {
-			if (locked) snprintf(s, sizeof s, "Nach dem 1. Urknall");
+			if (locked) snprintf(s, sizeof s, "Nach dem 1. Big Bang");
 			else { int d = 0; for (int c = 0; c < NCHAL; c++) d += (G.s.chalDone >> c) & 1; snprintf(s, sizeof s, "%d / %d geschafft", d, NCHAL); }
 		}
-		if (k == 4) snprintf(s, sizeof s, "Ton, 3D, Automatik");
-		if (k == 5) snprintf(s, sizeof s, "So funktioniert's");
-		textFit(x + 74, y + 27, 0.37f, C(locked ? 0x4A5280 : (k == 2 && bang_ready(&G) ? C_PURPLE : C_DIM)), C2D_AlignCenter, 136, s);
-		if (!locked) addHit(x, y, 148, 51, A_MENU, pg[k]);
+		if (k == 4) { int r = contracts_ready(&G); if (r) snprintf(s, sizeof s, "%d bereit zum Einlösen!", r); else snprintf(s, sizeof s, "3 aktive Aufträge"); }
+		if (k == 5) snprintf(s, sizeof s, "%d / %d gefunden", art_count(&G), NART);
+		if (k == 6) snprintf(s, sizeof s, "Ton, 3D, Automatik");
+		if (k == 7) snprintf(s, sizeof s, "So funktioniert's");
+		bool hl = (k == 2 && bang_ready(&G)) || (k == 4 && contracts_ready(&G));
+		textFit(x + 74, y + 20, 0.35f, C(locked ? 0x4A5280 : (hl ? (k == 2 ? C_PURPLE : C_GREEN) : C_DIM)), C2D_AlignCenter, 136, s);
+		if (!locked) addHit(x, y, 148, 39, A_MENU, pg[k]);
 	}
 }
 
@@ -1134,11 +1135,17 @@ static void pageStats(void) {
 	SL("Upgrades", "%d / %d", G.upgCount, nUpg);
 	SL("Erfolge", "%d / %d", ach_count(&G), nAch);
 	SL("Supernovas", "%.0f", G.s.novas);
-	num(G.s.dustTotal, t); SL("Sternenstaub (Bonus)", "%s", t);
-	SL("Urknalle", "%.0f", G.s.bangs);
-	num(G.s.singTotal, t); SL("Singularitäten", "%s", t);
+	num(G.s.dustTotal, t); SL("Stardust (Bonus)", "%s", t);
+	SL("Big Bangs", "%.0f", G.s.bangs);
+	num(G.s.singTotal, t); SL("Singularities", "%s", t);
 	SL("Preisanstieg", "%.3f", G.costGrowth);
 	SL("Offline-Effizienz", "%.0f%%", game_offline_eff(&G) * 100);
+	num(G.s.ext.x.alloy, t); SL("Alloy", "%s", t);
+	SL("Expeditionen", "%.0f", G.s.ext.x.expeditions);
+	SL("Bester Sektor", "%d", G.s.ext.x.sectorMax);
+	SL("Artefakte", "%d / %d", art_count(&G), NART);
+	SL("Aufträge erfüllt", "%.0f", G.s.ext.x.contractsDone);
+	num(refinery_mult(&G), t); SL("Raffinerie", "x%s", t);
 	fmt_time(game_offline_cap(&G), t, sizeof t); SL("Offline-Limit", "%s", t);
 #undef SL
 	scrollMaxSet(P_STATS, n * dy + 6, LIST_BOT - 58);
@@ -1171,7 +1178,7 @@ static void pageBang(void) {
 	}
 	maskBg(31, y0 - 2);
 	{
-	subHeader("Urknall");
+	subHeader("Big Bang");
 	panel(6, 58, 308, 64, 8, 0x1E1440, 0x5A3A90);
 	char b2[32];
 	circ(20, 72, 8, C(C_PURPLE));
@@ -1183,13 +1190,13 @@ static void pageBang(void) {
 	bool rdy = bang_ready(&G);
 	if (rdy) {
 		num(bang_gain(&G), b);
-		textf(14, 98, 0.42f, C(C_TEXT), 0, "Urknall: +%s Singularitäten", b);
+		textf(14, 98, 0.42f, C(C_TEXT), 0, "Big Bang: +%s Singularities", b);
 	} else {
 		num(bang_need(&G), b);
-		textf(14, 96, 0.35f, C(C_DIM), 0, "Benötigt %s Energie seit Urknall", b);
+		textf(14, 96, 0.35f, C(C_DIM), 0, "Benötigt %s Energie seit Big Bang", b);
 		bar(14, 111, 196, 6, (float)(log10(fmax(1, G.s.bangEarned)) / log10(bang_need(&G))), 0x5A3A90, C_PURPLE);
 	}
-	button(222, 66, 88, 36, C_PURPLE, rdy, 0.46f, "URKNALL");
+	button(222, 66, 88, 36, C_PURPLE, rdy, 0.46f, "BIG BANG");
 	if (rdy) addHit(222, 64, 88, 40, A_BANG, 0);
 	textFit(266, 105, 0.32f, C(C_DIM), C2D_AlignCenter, 92, "setzt fast alles zurück");
 
@@ -1253,7 +1260,7 @@ static void pageOpt(void) {
 		}
 		y += 32;
 	}
-	text(160, y + 6, 0.32f, C(0x4A5280), C2D_AlignCenter, "Sternenschmiede v1.0 - START: Beenden");
+	text(160, y + 6, 0.32f, C(0x4A5280), C2D_AlignCenter, "Star Forge v2.0 - START: Beenden");
 	scrollMaxSet(P_OPT, n * 32 + 30, LIST_BOT - 58);
 	subHeader("Optionen");
 }
@@ -1263,30 +1270,39 @@ static const char *HELP =
 	"Sammle Energie und baue ein kosmisches\n"
 	"Imperium auf. Tippe auf den Kristall.\n"
 	"Schnelles Tippen baut eine Kombo auf.\n\n"
-	"GEBÄUDE\n"
+	"GEBÄUDE & UPGRADES\n"
 	"Gebäude erzeugen Energie pro Sekunde.\n"
-	"Ab 25, 50, 100, 200 ... Stück verdoppelt\n"
+	"Ab 25, 50, 100 ... Stück verdoppelt\n"
 	"sich ihre Leistung. Halte gedrückt, um\n"
 	"mehrfach zu kaufen.\n\n"
-	"UPGRADES\n"
-	"Werden durch Gebäude, Energie, Klicks\n"
-	"und Meteore freigeschaltet.\n\n"
+	"EXPEDITION (HANGAR)\n"
+	"Fliege mit deinem Schiff durch Asteroi-\n"
+	"denfelder: Circle Pad lenkt, B boostet,\n"
+	"der Laser feuert automatisch. Sammle\n"
+	"Erz, weiche Minen und Drohnen aus und\n"
+	"fliege durch Sprungtore in tiefere\n"
+	"Sektoren. Erz bringt Energie und Alloy\n"
+	"für Schiffs-Upgrades. Goldene Relikt-\n"
+	"Asteroiden enthalten Artefakte.\n\n"
+	"AUFTRÄGE\n"
+	"Drei Aufträge gleichzeitig. Erfülle sie\n"
+	"für Alloy und Energie.\n\n"
 	"METEORE\n"
 	"Fliegen ab und zu über den Bildschirm.\n"
 	"Tippe sie für Energie oder Boni an!\n\n"
 	"SUPERNOVA\n"
-	"Setzt den Lauf zurück und gibt Sternen-\n"
-	"staub: +5% Produktion pro Staub. Gib ihn\n"
+	"Setzt den Lauf zurück und gibt Star-\n"
+	"dust: +5% Produktion pro Stück. Gib ihn\n"
 	"für Konstellationen aus, ohne den Bonus\n"
 	"zu verlieren.\n\n"
-	"URKNALL\n"
-	"Setzt auch Staub zurück, gibt aber\n"
-	"Singularitäten: mächtige Dauer-Boni und\n"
-	"Prüfungen mit festen Belohnungen.\n\n"
+	"BIG BANG\n"
+	"Setzt auch Stardust zurück, gibt aber\n"
+	"Singularities: mächtige Dauer-Boni und\n"
+	"Prüfungen mit festen Belohnungen.\n"
+	"Artefakte, Alloy und Schiff bleiben!\n\n"
 	"OFFLINE & STANDBY\n"
 	"Klappst du den 3DS zu, läuft die\n"
-	"Produktion weiter (anfangs 50%).\n"
-	"Es wird automatisch gespeichert.\n\n"
+	"Produktion weiter (anfangs 50%).\n\n"
 	"TASTEN\n"
 	"L/R: Reiter  A: Tippen  B: Zurück\n"
 	"Steuerkreuz: Scrollen  START: Beenden";
@@ -1299,6 +1315,8 @@ static void pageHelp(void) {
 	text(12, 58 - scrollY[P_HELP], 0.38f, C(C_TEXT), 0, HELP);
 	subHeader("Hilfe");
 }
+
+#include "ui_exp.inc"
 
 // ============================================================ Kopf, Reiter, Meteor, Modal
 static bool anyGenAffordable(void) {
@@ -1335,8 +1353,13 @@ static void tabIcon(int k, float cx, float cy, u32 c) {
 		tri(cx, cy - 9, C(c), cx - 7, cy - 1, C(c), cx + 7, cy - 1, C(c));
 		rect(cx - 3, cy - 1, 6, 8, C(c));
 		break;
-	case 3: starIcon(cx, cy, 8, c); break;
-	case 4:
+	case 3:
+		tri(cx + 9, cy, C(lighten(c, 0.3f)), cx - 6, cy - 6, C(c), cx - 6, cy + 6, C(darken(c, 0.3f)));
+		tri(cx - 6, cy - 6, C(darken(c, 0.2f)), cx - 2, cy, C(c), cx - 8, cy, C(c));
+		tri(cx - 6, cy + 6, C(darken(c, 0.2f)), cx - 2, cy, C(c), cx - 8, cy, C(c));
+		break;
+	case 4: starIcon(cx, cy, 8, c); break;
+	case 5:
 		for (int i = -1; i <= 1; i++) circ(cx + i * 6, cy, 2.4f, C(c));
 		break;
 	}
@@ -1356,30 +1379,32 @@ static void drawHeader(void) {
 }
 
 static void drawTabs(void) {
-	static const char *lbl[5] = {"Kern", "Bauen", "Upgrades", "Sterne", "Mehr"};
+	static const char *lbl[6] = {"Kern", "Bauen", "Upgrades", "Hangar", "Sterne", "Mehr"};
+	const float TWD = BW / 6.0f;
 	rectG(0, 207, BW, 33, C(0x141A40), C(0x0C1028));
 	rect(0, 207, BW, 1, C(0x2E3A78));
-	for (int k = 0; k < 5; k++) {
-		float x = k * 64;
+	for (int k = 0; k < 6; k++) {
+		float x = k * TWD;
 		bool on = tab == k;
 		if (on) {
-			rectG(x + 2, 208, 60, 32, C(0x26306A), C(0x161C44));
-			rect(x + 10, 208, 44, 2, C(C_CYAN));
+			rectG(x + 2, 208, TWD - 4, 32, C(0x26306A), C(0x161C44));
+			rect(x + 8, 208, TWD - 16, 2, C(C_CYAN));
 		}
-		tabIcon(k, x + 32, 218, on ? C_CYAN : C_DIM);
-		text(x + 32, 227.5f, 0.36f, C(on ? C_TEXT : C_DIM), C2D_AlignCenter, lbl[k]);
+		tabIcon(k, x + TWD / 2, 218, on ? C_CYAN : C_DIM);
+		textFit(x + TWD / 2, 227.5f, 0.34f, C(on ? C_TEXT : C_DIM), C2D_AlignCenter, TWD - 4, lbl[k]);
 		bool badge = false;
 		int cnt = 0;
 		if (k == 1) badge = anyGenAffordable() && G.s.gens[0] < 1;
 		if (k == 2) { cnt = upgAffordable(); badge = cnt > 0; }
-		if (k == 3) badge = perkAffordable();
-		if (k == 4) badge = bang_ready(&G);
+		if (k == 3) badge = shipAffordable();
+		if (k == 4) badge = perkAffordable();
+		if (k == 5) { cnt = contracts_ready(&G); badge = bang_ready(&G) || cnt > 0; }
 		if (badge && !on) {
 			float pulse = 0.5f + 0.5f * sinf(T * 5);
-			circ(x + 46, 213, 5 + pulse, C(C_RED));
-			if (cnt > 0 && cnt < 100) textf(x + 46, 207.5f, 0.28f, C(0xFFFFFF), C2D_AlignCenter, "%d", cnt);
+			circ(x + TWD - 10, 213, 5 + pulse, C(C_RED));
+			if (cnt > 0 && cnt < 100) textf(x + TWD - 10, 207.5f, 0.28f, C(0xFFFFFF), C2D_AlignCenter, "%d", cnt);
 		}
-		addHit(x, 207, 64, 33, A_TAB, k);
+		addHit(x, 207, TWD, 33, A_TAB, k);
 	}
 }
 
@@ -1449,10 +1474,13 @@ static void drawBottom(void) {
 	case P_CHAL: pageChal(); break;
 	case P_OPT: pageOpt(); break;
 	case P_HELP: pageHelp(); break;
+	case P_HANGAR: pageHangar(); break;
+	case P_CONTRACTS: pageContracts(); break;
+	case P_ARTS: pageArts(); break;
 	}
 	// Scrollbalken
 	if (scrollMax[page] > 0) {
-		float top = page == P_UPG ? 92 : page == P_STARS ? 100 : page == P_BANG ? 126 : page == P_BUILD ? 56 : 58;
+		float top = page == P_UPG ? 92 : page == P_STARS ? 100 : page == P_BANG ? 126 : page == P_BUILD ? 56 : page == P_HANGAR ? 104 : 58;
 		float vh = LIST_BOT - top;
 		float th = fmaxf(16, vh * vh / (vh + scrollMax[page]));
 		float ty = top + (vh - th) * (scrollY[page] / scrollMax[page]);
@@ -1473,8 +1501,8 @@ static float tx0, ty0, tx, ty, tLastY, tHold, tRepeatT, tScroll0;
 static bool pageScrolls(void) { return scrollMax[page] > 0; }
 
 static void setTab(int k) {
-	if (k < 0) k = 4;
-	if (k > 4) k = 0;
+	if (k < 0) k = 5;
+	if (k > 5) k = 0;
 	if (tab == k && page != k) { page = k; return; }
 	tab = k;
 	page = k;
@@ -1500,6 +1528,7 @@ static void modalYes(void) {
 	case MD_RESET2: {
 		u8 snd0 = G.s.sound, st = G.s.stereo;
 		game_new(&G);
+		contract_fill(&G);
 		G.s.sound = snd0;
 		G.s.stereo = st;
 		saveGame();
@@ -1551,7 +1580,7 @@ static void act(Hit *h, float x, float y) {
 	case A_NOVA: {
 		char b[32];
 		num(nova_gain(&G), b);
-		openModal(MD_NOVA, 0, "Supernova auslösen?", "Du erhältst +%s Sternenstaub. Energie, Gebäude und Upgrades werden zurückgesetzt.", b);
+		openModal(MD_NOVA, 0, "Supernova auslösen?", "Du erhältst +%s Stardust. Energie, Gebäude und Upgrades werden zurückgesetzt.", b);
 		break;
 	}
 	case A_PERK:
@@ -1563,7 +1592,7 @@ static void act(Hit *h, float x, float y) {
 	case A_BANG: {
 		char b[32];
 		num(bang_gain(&G), b);
-		openModal(MD_BANG, 0, "Urknall auslösen?", "Du erhältst +%s Singularitäten. ALLES außer Erfolgen, Singularitäten und Prüfungen wird zurückgesetzt.", b);
+		openModal(MD_BANG, 0, "Big Bang auslösen?", "Du erhältst +%s Singularities. ALLES außer Erfolgen, Singularities und Prüfungen wird zurückgesetzt.", b);
 		break;
 	}
 	case A_SPERK:
@@ -1588,11 +1617,30 @@ static void act(Hit *h, float x, float y) {
 		play(SND_TAB, 1.1f, 0.35f);
 		break;
 	case A_YES: modalYes(); play(SND_TAB, 1, 0.35f); break;
+	case A_HSTART: startExpedition(); break;
+	case A_HSEC: expSector += h->p; play(SND_TAB, 1.1f, 0.3f); break;
+	case A_SHIPUP:
+		if (ship_up_buy(&G, h->p)) { play(SND_BUY, 1.1f, 0.55f); burst(0, 270, y, 14, 120, C_CYAN); }
+		else play(SND_ERR, 1, 0.4f);
+		break;
+	case A_CLAIM: {
+		double en, al;
+		if (contract_claim(&G, h->p, &en, &al)) {
+			char b[32], b2[32];
+			num(en, b);
+			num(al, b2);
+			toast(C_GREEN, "Auftrag erfüllt!", "+%s Alloy, +%s Energie", b2, b);
+			play(SND_ACH, 1.1f, 0.6f);
+			burst(0, 270, y, 20, 140, C_GREEN);
+		}
+		break;
+	}
 	case A_NO: modal = MD_NONE; play(SND_TAB, 0.8f, 0.35f); break;
 	}
 }
 
 static void handleInput(u32 kDown, u32 kHeld, u32 kUp, float dt) {
+	if (inExp) { handleExpInput(kDown, kHeld); return; }
 	touchPosition tp;
 	hidTouchRead(&tp);
 	if (kDown & KEY_TOUCH) {
@@ -1712,6 +1760,12 @@ int main(void) {
 	sndInit();
 	bool loaded = loadGame();
 	g_sci = G.s.sciNotation;
+	contract_fill(&G);
+#ifdef DESKTOP_TEST
+	if (getenv("SF_ALLOY")) G.s.ext.x.alloy = atof(getenv("SF_ALLOY"));
+	if (getenv("SF_ARTS")) G.s.ext.x.artifacts = (uint32_t)strtoul(getenv("SF_ARTS"), NULL, 0);
+	if (getenv("SF_SECTOR")) G.s.ext.x.sectorMax = atoi(getenv("SF_SECTOR"));
+#endif
 	gfxSet3D(G.s.stereo);
 	game_recalc(&G);
 	if (loaded) {
@@ -1754,6 +1808,18 @@ int main(void) {
 		T += fdt;
 		handleEvents();
 		handleInput(kDown, kHeld, kUp, fdt);
+		if (inExp) {
+			float ix, iy;
+			bool boost;
+			expInput(kHeld, &ix, &iy, &boost);
+			if (!modal) exp_step(&EX, &G, ix, iy, boost, fdt);
+			expEvents();
+			if (expIntroT > 0) expIntroT -= fdt;
+			float tcx = fminf(fmaxf(EX.x, 200), WORLD - 200), tcy = fminf(fmaxf(EX.y, 120), WORLD - 120);
+			camX += (tcx - camX) * fminf(1, fdt * 8);
+			camY += (tcy - camY) * fminf(1, fdt * 8);
+			if (EX.done) endExpedition();
+		}
 		updScroll(fdt);
 		updParts(fdt);
 		for (int i = 0; i < NFLOAT; i++) if (floats[i].life > 0) floats[i].life -= fdt;
@@ -1775,17 +1841,17 @@ int main(void) {
 		C2D_TargetClear(tgtTop, C(0x060818));
 		C2D_SceneBegin(tgtTop);
 		eyeSign = -1;
-		drawTop();
+		if (inExp) drawExpTop(); else drawTop();
 		if (slider3d > 0.01f) {
 			C2D_TargetClear(tgtTopR, C(0x060818));
 			C2D_SceneBegin(tgtTopR);
 			eyeSign = 1;
-			drawTop();
+			if (inExp) drawExpTop(); else drawTop();
 		}
 		eyeSign = 0;
 		C2D_TargetClear(tgtBot, C(C_BG1));
 		C2D_SceneBegin(tgtBot);
-		drawBottom();
+		if (inExp) drawExpBottom(); else drawBottom();
 		C3D_FrameEnd(0);
 	}
 	saveGame();
