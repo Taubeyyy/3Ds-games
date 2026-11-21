@@ -26,7 +26,7 @@ Benötigt nur Docker:
 ./build.sh sternenschmiede # nur eins
 ```
 
-Ergebnis liegt in `dist/`. Ein neues Release entsteht automatisch, wenn ein Tag wie `v1.0.0` gepusht wird.
+Ergebnis liegt in `dist/`. Bei jedem Push auf `main` baut GitHub alles neu und aktualisiert das Release `sammlung`.
 
 ## Neues Spiel hinzufügen
 

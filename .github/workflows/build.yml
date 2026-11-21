@@ -17,8 +17,12 @@ jobs:
         with:
           name: spiele
           path: dist/*
-      - name: Release veröffentlichen
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Release veröffentlichen (QR-Links zeigen immer hierauf)
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: sammlung
+          name: 3DS Sammlung (aktuell)
+          body: Automatisch gebaut aus ${{ github.sha }}. Installation mit FBI per QR-Code, siehe Website.
+          make_latest: true
           files: dist/*
