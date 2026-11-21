@@ -268,6 +268,9 @@ Sound make(u32 samples, u32 rate) { Sound s; s.data = (s16 *)calloc(samples, siz
 void commit(Sound &) {}
 void play(const Sound &, float, float, float) {}
 void setMasterVolume(float) {}
+void music(const Sound &, float) {}
+void musicVolume(float) {}
+void stopMusic() {}
 } // namespace audio
 
 // ------------------------------------------------------------------ Speichern

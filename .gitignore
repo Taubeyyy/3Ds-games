@@ -10,3 +10,4 @@ tools/bannertool/
 tools/bin/
 engine/demos/*/build/
 
+__pycache__/

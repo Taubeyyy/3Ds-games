@@ -216,6 +216,78 @@ bool Mesh::loadFile(const char *path) {
 	return ok;
 }
 
+// ------------------------------------------------------------------ MeshBuilder
+bool MeshBuilder::reserve(int addV, int addI) {
+	if (nv + addV > 65535) return false;
+	if (nv + addV > capV) {
+		int c = capV ? capV : 1024;
+		while (c < nv + addV) c *= 2;
+		Vertex3D *nvp = (Vertex3D *)realloc(v, sizeof(Vertex3D) * c);
+		if (!nvp) return false;
+		v = nvp; capV = c;
+	}
+	if (ni + addI > capI) {
+		int c = capI ? capI : 2048;
+		while (c < ni + addI) c *= 2;
+		u16 *nip = (u16 *)realloc(idx, sizeof(u16) * c);
+		if (!nip) return false;
+		idx = nip; capI = c;
+	}
+	return true;
+}
+static void tintCol(u8 *c, Color t) {
+	c[0] = u8(c[0] * ((t.hex >> 16) & 255) / 255);
+	c[1] = u8(c[1] * ((t.hex >> 8) & 255) / 255);
+	c[2] = u8(c[2] * (t.hex & 255) / 255);
+	c[3] = u8(c[3] * clampf(t.a, 0, 1));
+}
+bool MeshBuilder::add(const Mesh &m, const Mat4 &xf, Color tint) {
+	if (!m.v || !reserve(m.nv, m.ni)) return false;
+	for (int i = 0; i < m.nv; i++) {
+		Vertex3D q = m.v[i];
+		Vec3 p = xf.point(Vec3(q.pos[0], q.pos[1], q.pos[2]));
+		Vec3 n = xf.dir(Vec3(q.nrm[0], q.nrm[1], q.nrm[2])).norm();
+		q.pos[0] = p.x; q.pos[1] = p.y; q.pos[2] = p.z;
+		q.nrm[0] = n.x; q.nrm[1] = n.y; q.nrm[2] = n.z;
+		tintCol(q.col, tint);
+		v[nv + i] = q;
+	}
+	for (int i = 0; i < m.ni; i++) idx[ni + i] = u16(m.idx[i] + nv);
+	nv += m.nv;
+	ni += m.ni;
+	return true;
+}
+bool MeshBuilder::quad(Vec3 a, Vec3 b, Vec3 c, Vec3 d, Color ca, Color cb, Color cc, Color cd, Vec2 uv0, Vec2 uv1) {
+	if (!reserve(4, 6)) return false;
+	Vec3 n = (b - a).cross(c - a).norm();
+	Vec3 P[4] = {a, b, c, d};
+	Color C[4] = {ca, cb, cc, cd};
+	Vec2 T[4] = {uv0, Vec2(uv1.x, uv0.y), uv1, Vec2(uv0.x, uv1.y)};
+	for (int k = 0; k < 4; k++) {
+		Vertex3D &q = v[nv + k];
+		q.pos[0] = P[k].x; q.pos[1] = P[k].y; q.pos[2] = P[k].z;
+		q.uv[0] = T[k].x; q.uv[1] = T[k].y;
+		q.nrm[0] = n.x; q.nrm[1] = n.y; q.nrm[2] = n.z;
+		q.col[0] = u8((C[k].hex >> 16) & 255); q.col[1] = u8((C[k].hex >> 8) & 255); q.col[2] = u8(C[k].hex & 255); q.col[3] = u8(clampf(C[k].a, 0, 1) * 255);
+	}
+	u16 q6[6] = {u16(nv), u16(nv + 1), u16(nv + 2), u16(nv), u16(nv + 2), u16(nv + 3)};
+	memcpy(idx + ni, q6, sizeof q6);
+	nv += 4;
+	ni += 6;
+	return true;
+}
+Mesh MeshBuilder::build(Mesh *reuse) {
+	Mesh m;
+	Mesh &o = reuse ? *reuse : m;
+	if (o.nv < nv || o.ni < ni || !o.v) o.alloc(nv, ni);
+	o.nv = nv; o.ni = ni;
+	if (nv) memcpy(o.v, v, sizeof(Vertex3D) * nv);
+	if (ni) memcpy(o.idx, idx, sizeof(u16) * ni);
+	o.upload();
+	return reuse ? Mesh() : m;
+}
+void MeshBuilder::free() { ::free(v); ::free(idx); v = nullptr; idx = nullptr; nv = ni = capV = capI = 0; }
+
 namespace gfx3d {
 bool project(const Gfx &g, const Camera3D &cam, Vec3 p, Vec2 *out, float *depth2d) {
 	Vec3 v = Mat4::lookAt(cam.eye, cam.target, cam.up).point(p);

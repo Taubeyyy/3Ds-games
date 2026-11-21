@@ -63,6 +63,22 @@ public:
 	bool loadFile(const char *path);    // .fmesh aus tools/meshtool.py (auch romfs:/…)
 };
 
+// Viele Meshes zu einem zusammenfassen (statische Level-Geometrie = ein Zeichenaufruf).
+// Farbe wird mit den Vertexfarben multipliziert. Max. 65535 Vertices pro Ergebnis.
+struct MeshBuilder {
+	Vertex3D *v = nullptr;
+	u16 *idx = nullptr;
+	int nv = 0, ni = 0, capV = 0, capI = 0;
+	bool add(const Mesh &m, const Mat4 &xf, Color tint = Color(0xFFFFFF));
+	// Viereck a-b-c-d gegen den Uhrzeigersinn (von vorne gesehen)
+	bool quad(Vec3 a, Vec3 b, Vec3 c, Vec3 d, Color ca, Color cb, Color cc, Color cd, Vec2 uv0 = Vec2(0, 0), Vec2 uv1 = Vec2(1, 1));
+	void clear() { nv = ni = 0; }
+	Mesh build(Mesh *reuse = nullptr); // in neues Mesh kopieren (reuse: vorhandenes überschreiben)
+	void free();
+private:
+	bool reserve(int addV, int addI);
+};
+
 struct Texture3D {
 	void *impl = nullptr;
 	int w = 0, h = 0;

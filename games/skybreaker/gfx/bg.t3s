@@ -1,0 +1,5 @@
+--atlas -f rgba8 -z auto
+png/sky.png
+png/crack.png
+png/bottom.png
+png/pantheon.png

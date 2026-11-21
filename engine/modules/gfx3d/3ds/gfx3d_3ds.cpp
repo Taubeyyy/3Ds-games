@@ -65,6 +65,7 @@ static C3D_LightLutDA g_da[8];
 static float g_daRange[8];
 static float attnFn(float d, float range, float) { float t = 1 - d * d / (range * range); return t > 0 ? t * t : 0; }
 static float g_lutShine = -1;
+static bool g_lutBound;
 static C3D_FogLut g_fog;
 static C3D_Mtx g_proj;
 static Mat4 g_view;
@@ -120,6 +121,7 @@ void begin(Gfx &g, const Camera3D &cam, const Scene3D &scene) {
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_uProj, &g_proj);
 	// Licht
 	C3D_LightEnvInit(&g_lenv);
+	g_lutBound = false;
 	C3D_LightEnvAmbient(&g_lenv, 1, 1, 1); // Umgebungslicht kommt aus material.ambient (= Szene)
 	C3D_LightEnvBind(&g_lenv);
 	for (int i = 0; i < scene.nLights && i < 8; i++) {
@@ -154,8 +156,9 @@ void draw(const Mesh &m, const Mat4 &model, const Material &mat) {
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_uMV, &mv);
 	// Material
 	if (mat.lit) {
-		if (g_lutShine != mat.shininess) { LightLut_Phong(&g_lutPhong, mat.shininess); g_lutShine = mat.shininess; }
-		C3D_LightEnvLut(&g_lenv, GPU_LUT_D0, GPU_LUTINPUT_NH, false, &g_lutPhong);
+		// LUT nur bei Änderung neu hochladen (sonst läuft der Befehlspuffer bei vielen Objekten voll)
+		if (g_lutShine != mat.shininess) { LightLut_Phong(&g_lutPhong, mat.shininess); g_lutShine = mat.shininess; g_lutBound = false; }
+		if (!g_lutBound) { C3D_LightEnvLut(&g_lenv, GPU_LUT_D0, GPU_LUTINPUT_NH, false, &g_lutPhong); g_lutBound = true; }
 		C3D_Material cm;
 		memset(&cm, 0, sizeof cm);
 		rgb(g_scene->ambient, 1, cm.ambient);

@@ -142,6 +142,12 @@ Sound make(u32 samples, u32 rate = 22050);          // Puffer anlegen (linearer 
 void commit(Sound &s);                               // nach dem Befüllen aufrufen
 void play(const Sound &s, float pitch = 1, float vol = 1, float pan = 0);
 void setMasterVolume(float v);
+// Musik: eigener Kanal, läuft in Schleife. vol kann jedes Bild geändert werden (Überblenden).
+void music(const Sound &s, float vol = 0.7f);
+void musicVolume(float vol);
+void stopMusic();
+// WAV (PCM 16 Bit, mono/stereo → mono) aus dem Speicher laden, z. B. data/thema.wav → thema_wav[]
+Sound loadWav(const void *data, size_t size);
 }
 
 // ------------------------------------------------------------------ Speichern

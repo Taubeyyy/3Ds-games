@@ -1,0 +1,20 @@
+70 shot title
+80 tap 160 120
+110 shot menu
+120 tap 160 110
+160 shot pantheon
+170 key R
+200 shot ignara
+210 tap 195 56
+240 shot thalor
+250 tap 265 56
+280 shot nerys
+290 tap 55 112
+320 shot vexa
+330 tap 125 112
+360 shot korrin
+370 tap 195 112
+400 shot lyra
+410 tap 265 112
+440 shot sylv
+450 quit

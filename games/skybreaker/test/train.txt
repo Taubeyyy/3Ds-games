@@ -1,0 +1,23 @@
+70 shot title
+80 tap 160 120
+110 shot menu
+120 tap 160 50
+200 shot t_start
+205 stick 0 -1 20
+230 key A
+238 key A
+246 key A
+252 shot t_combo
+270 key A
+300 key X
+310 shot t_spin
+330 key Y
+338 shot t_cast
+360 stick 1 0 10
+365 key B
+369 shot t_dash
+400 key A
+410 key A
+422 key A
+436 shot t_heavy
+450 quit

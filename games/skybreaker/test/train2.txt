@@ -1,0 +1,12 @@
+70 shot title
+80 tap 160 120
+110 shot menu
+120 tap 160 50
+200 shot t_start
+205 stick 0 -1 12
+222 key B
+225 key A
+236 shot t_dstrike
+260 key A
+300 shot t_hold
+320 quit

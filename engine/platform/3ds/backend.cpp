@@ -205,6 +205,25 @@ void play(const Sound &s, float pitch, float vol, float pan) {
 	ndspChnWaveBufAdd(ch, &g_wb[ch]);
 }
 void setMasterVolume(float v) { g_master = v; }
+static const int MUSIC_CH = 20;
+void music(const Sound &s, float vol) {
+	if (!g_sndOk || !s.data) return;
+	ndspChnWaveBufClear(MUSIC_CH);
+	ndspChnSetRate(MUSIC_CH, s.rate);
+	memset(&g_wb[MUSIC_CH], 0, sizeof g_wb[MUSIC_CH]);
+	g_wb[MUSIC_CH].data_vaddr = s.data;
+	g_wb[MUSIC_CH].nsamples = s.samples;
+	g_wb[MUSIC_CH].looping = true;
+	musicVolume(vol);
+	ndspChnWaveBufAdd(MUSIC_CH, &g_wb[MUSIC_CH]);
+}
+void musicVolume(float vol) {
+	if (!g_sndOk) return;
+	float mix[12] = {0};
+	mix[0] = mix[1] = clampf(vol, 0, 1) * g_master;
+	ndspChnSetMix(MUSIC_CH, mix);
+}
+void stopMusic() { if (g_sndOk) ndspChnWaveBufClear(MUSIC_CH); }
 } // namespace audio
 
 // ------------------------------------------------------------------ Speichern
@@ -313,7 +332,7 @@ int run(App &app, const Config &cfg) {
 	gfxInitDefault();
 	osSetSpeedupEnable(true);
 	if (cfg.romfs) romfsInit();
-	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE * 2); // Platz für viele 3D-Zeichenaufrufe pro Bild
 	C2D_Init(cfg.maxObjects);
 	C2D_Prepare();
 	C3D_DepthTest(false, GPU_ALWAYS, GPU_WRITE_COLOR);

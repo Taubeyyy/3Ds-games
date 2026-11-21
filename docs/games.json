@@ -1,5 +1,13 @@
 [
   {
+    "id": "skybreaker",
+    "title": "Skybreaker",
+    "genre": "Action-Roguelike (Vorschau)",
+    "version": "0.1.0",
+    "desc": "Konzept-Vorschau unseres ersten FORGE-Spiels: Hauptmenü mit 3D-Szene und eigener Musik, Pantheon mit Seren und den 7 Göttern als drehbare 3D-Figuren, und ein Trainingsplatz zum Testen des Kampfes (Kombo, Sprint-Schlag, Wirbel, Splitterwurf, Ausweichen). Feedback erwünscht!",
+    "hours": "Vorschau: Menü, Pantheon, Kampf-Training"
+  },
+  {
     "id": "glibberalarm",
     "title": "Goo Alert",
     "genre": "Tower Defense",
