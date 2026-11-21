@@ -1,0 +1,15 @@
+5 shot start
+8 stick 0 1 70
+80 shot walk
+82 stick 1 0.3 50
+90 key A
+140 shot jump
+150 key B
+158 shot boom
+170 tap 160 76
+200 shot debug
+202 stick 0.4 -1 80
+290 shot back
+292 tap 238 115
+340 shot rain
+342 quit

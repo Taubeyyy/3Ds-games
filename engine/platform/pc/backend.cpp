@@ -42,6 +42,7 @@ static void triF(float x0, float y0, RGBAf c0, float x1, float y1, RGBAf c1, flo
 	float miny = fminf(y0, fminf(y1, y2)), maxy = fmaxf(y0, fmaxf(y1, y2));
 	float area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
 	if (fabsf(area) < 1e-6f) return;
+	minx = fmaxf(minx, 0); miny = fmaxf(miny, 0); maxx = fminf(maxx, curW - 1); maxy = fminf(maxy, curH - 1); // auf Bildschirm begrenzen
 	for (int j = int(floorf(miny)); j <= int(ceilf(maxy)); j++)
 		for (int i = int(floorf(minx)); i <= int(ceilf(maxx)); i++) {
 			float px_ = i + 0.5f, py_ = j + 0.5f;
@@ -103,8 +104,8 @@ static void drawImg(const PcImg *im, float cx, float cy, float ang, Color tint, 
 	float hw = w * fabsf(sx) / 2, hh = h * fabsf(sy) / 2;
 	float ex = fabsf(ca) * hw + fabsf(sa) * hh, ey = fabsf(sa) * hw + fabsf(ca) * hh;
 	RGBAf t = toF(tint);
-	for (int j = int(floorf(cy - ey)); j <= int(ceilf(cy + ey)); j++)
-		for (int i = int(floorf(cx - ex)); i <= int(ceilf(cx + ex)); i++) {
+	for (int j = int(fmaxf(-1.f, floorf(cy - ey))); j <= int(fminf(float(curH), ceilf(cy + ey))); j++)
+		for (int i = int(fmaxf(-1.f, floorf(cx - ex))); i <= int(fminf(float(curW), ceilf(cx + ex))); i++) {
 			if (i < 0 || j < 0 || i >= curW || j >= curH) continue;
 			float dx = i + 0.5f - cx, dy = j + 0.5f - cy;
 			float lx = ca * dx + sa * dy, ly = -sa * dx + ca * dy;
@@ -131,8 +132,8 @@ void Gfx::rectGrad(float x, float y, float w, float h, Color t, Color b, float d
 	if (w <= 0 || h <= 0) return;
 	x = px(x, d); y = py(y);
 	RGBAf ct = toF(t), cb = toF(b);
-	for (int j = int(floorf(y)); j < int(ceilf(y + h)); j++)
-		for (int i = int(floorf(x)); i < int(ceilf(x + w)); i++) {
+	for (int j = int(fmaxf(-1.f, floorf(y))); j < int(fminf(float(curH), ceilf(y + h))); j++)
+		for (int i = int(fmaxf(-1.f, floorf(x))); i < int(fminf(float(curW), ceilf(x + w))); i++) {
 			float cx = i + 0.5f, cy = j + 0.5f;
 			if (cx < x || cx >= x + w || cy < y || cy >= y + h) continue;
 			blend(i, j, lerpF(ct, cb, (cy - y) / h), 1);
@@ -144,8 +145,8 @@ void Gfx::rrect(float x, float y, float w, float h, float r, Color top, Color bo
 	if (r * 2 > h) r = h / 2;
 	if (r * 2 > w) r = w / 2;
 	RGBAf ct = toF(top), cb = toF(bottom);
-	for (int j = int(floorf(y)); j < int(ceilf(y + h)); j++)
-		for (int i = int(floorf(x)); i < int(ceilf(x + w)); i++) {
+	for (int j = int(fmaxf(-1.f, floorf(y))); j < int(fminf(float(curH), ceilf(y + h))); j++)
+		for (int i = int(fmaxf(-1.f, floorf(x))); i < int(fminf(float(curW), ceilf(x + w))); i++) {
 			float cx = i + 0.5f, cy = j + 0.5f;
 			float qx = fmaxf(fmaxf(x + r - cx, cx - (x + w - r)), 0), qy = fmaxf(fmaxf(y + r - cy, cy - (y + h - r)), 0);
 			float dist = sqrtf(qx * qx + qy * qy) - r;
@@ -157,8 +158,8 @@ void Gfx::rrect(float x, float y, float w, float h, float r, Color top, Color bo
 void Gfx::circle(float x, float y, float r, Color c, float d) {
 	x = px(x, d); y = py(y);
 	RGBAf cf = toF(c);
-	for (int j = int(floorf(y - r)); j <= int(ceilf(y + r)); j++)
-		for (int i = int(floorf(x - r)); i <= int(ceilf(x + r)); i++) {
+	for (int j = int(fmaxf(-1.f, floorf(y - r))); j <= int(fminf(float(curH), ceilf(y + r))); j++)
+		for (int i = int(fmaxf(-1.f, floorf(x - r))); i <= int(fminf(float(curW), ceilf(x + r))); i++) {
 			float dx = i + 0.5f - x, dy = j + 0.5f - y;
 			float cov = clampf(r - sqrtf(dx * dx + dy * dy) + 0.5f, 0, 1);
 			if (cov > 0) blend(i, j, cf, cov);

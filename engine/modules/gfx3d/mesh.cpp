@@ -123,6 +123,27 @@ Mesh Mesh::plane(Vec2 s, int div, Color c, float uvs) {
 	m.upload();
 	return m;
 }
+Mesh Mesh::grid(int nx, int nz, float cell, const float *hgt, const u32 *cols, float uvs) {
+	Mesh m;
+	m.alloc((nx + 1) * (nz + 1), nx * nz * 6);
+	int k = 0;
+	for (int j = 0; j <= nz; j++)
+		for (int i = 0; i <= nx; i++, k++) {
+			Color c(cols ? cols[k] : 0xFFFFFF);
+			setV(m.v[k], Vec3((i - nx * 0.5f) * cell, hgt[k], (j - nz * 0.5f) * cell), Vec2(float(i) / nx * uvs, float(j) / nz * uvs), Vec3(0, 1, 0), c);
+		}
+	k = 0;
+	for (int j = 0; j < nz; j++)
+		for (int i = 0; i < nx; i++) {
+			u16 a = u16(j * (nx + 1) + i), b = u16(a + nx + 1);
+			u16 q[6] = {a, b, u16(a + 1), u16(a + 1), b, u16(b + 1)};
+			memcpy(&m.idx[k], q, sizeof q);
+			k += 6;
+		}
+	m.computeNormals();
+	m.upload();
+	return m;
+}
 Mesh Mesh::cylinder(float r, float h, int seg, Color c) {
 	Mesh m;
 	m.alloc((seg + 1) * 2 + 2 * (seg + 2), seg * 6 + seg * 6);

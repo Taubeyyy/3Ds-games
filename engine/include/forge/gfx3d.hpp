@@ -57,6 +57,8 @@ public:
 	static Mesh sphere(float r, int seg, int rings, Color c);
 	static Mesh plane(Vec2 size, int div, Color c, float uvScale = 1);
 	static Mesh cylinder(float r, float h, int seg, Color c);
+	// Gelände: (nx+1)*(nz+1) Höhen, zentriert um den Ursprung; colors optional (0xRRGGBB je Punkt)
+	static Mesh grid(int nx, int nz, float cell, const float *heights, const u32 *colors, float uvScale = 1);
 	bool loadMem(const void *data, size_t size); // eingebettete .fmesh (Ordner data/ → <name>_fmesh.h)
 	bool loadFile(const char *path);    // .fmesh aus tools/meshtool.py (auch romfs:/…)
 };

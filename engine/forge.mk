@@ -1,5 +1,5 @@
 # FORGE – gemeinsames 3DS-Makefile. Im Spiel-Makefile: TARGET, APP_TITLE, APP_DESCRIPTION, APP_AUTHOR, ICON setzen,
-# optional GAME_SOURCES (Standard: source), GRAPHICS (gfx), DATA (data: .fmesh/.bin/.wav einbetten), ROMFS, EXTRA_LIBS, FORGE_MODULES (physics2d gfx3d); danach: include <pfad>/engine/forge.mk
+# optional GAME_SOURCES (Standard: source), GRAPHICS (gfx), DATA (data: .fmesh/.bin/.wav einbetten), ROMFS, EXTRA_LIBS, FORGE_MODULES (physics2d gfx3d phys3d); danach: include <pfad>/engine/forge.mk
 .SUFFIXES:
 ifeq ($(strip $(DEVKITARM)),)
 $(error "DEVKITARM fehlt (devkitPro). Am einfachsten ../../build.sh nutzen")
@@ -20,7 +20,7 @@ CFLAGS   += $(INCLUDE) -D__3DS__
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 ASFLAGS  := -g $(ARCH)
 LDFLAGS   = -specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-LIBS     := $(EXTRA_LIBS) $(if $(filter physics2d,$(FORGE_MODULES)),-lbox2d) -lcitro2d -lcitro3d -lctru -lm
+LIBS     := $(EXTRA_LIBS) $(if $(filter physics2d,$(FORGE_MODULES)),-lbox2d) $(if $(filter phys3d,$(FORGE_MODULES)),-lBulletDynamics -lBulletCollision -lLinearMath) -lcitro2d -lcitro3d -lctru -lm
 LIBDIRS  := $(PORTLIBS) $(CTRULIB)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
@@ -38,7 +38,7 @@ export T3XFILES       := $(GFXFILES:.t3s=.t3x)
 export OFILES_SOURCES := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o)
 export OFILES         := $(addsuffix .o,$(BINFILES)) $(addsuffix .o,$(T3XFILES)) $(PICAFILES:.v.pica=.shbin.o) $(OFILES_SOURCES)
 export HFILES         := $(addsuffix .h,$(subst .,_,$(BINFILES))) $(addsuffix .h,$(subst .,_,$(T3XFILES))) $(PICAFILES:.v.pica=_shbin.h)
-export INCLUDE        := $(foreach d,$(GAME_SOURCES),-I$(CURDIR)/$(d)) -I$(FORGE)/include $(foreach d,$(LIBDIRS),-I$(d)/include) -I$(CURDIR)/$(BUILD)
+export INCLUDE        := $(foreach d,$(GAME_SOURCES),-I$(CURDIR)/$(d)) -I$(FORGE)/include $(if $(filter phys3d,$(FORGE_MODULES)),-I$(PORTLIBS)/include/bullet) $(foreach d,$(LIBDIRS),-I$(d)/include) -I$(CURDIR)/$(BUILD)
 export LIBPATHS       := $(foreach d,$(LIBDIRS),-L$(d)/lib)
 export APP_ICON       := $(TOPDIR)/$(ICON)
 export _3DSXFLAGS     += --smdh=$(CURDIR)/$(TARGET).smdh

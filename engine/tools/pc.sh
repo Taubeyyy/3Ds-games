@@ -34,7 +34,7 @@ done
 MODS="$(grep -E '^FORGE_MODULES' "$GAME/Makefile" 2>/dev/null | sed 's/.*=//')"
 MODSRC=""; MODINC=""; MODLIB=""
 for m in $MODS; do
-	MODSRC="$MODSRC $(ls "$ENG"/modules/$m/*.cpp "$ENG"/modules/$m/pc/*.cpp 2>/dev/null)"
+	MODSRC="$MODSRC $(ls "$ENG"/modules/$m/*.cpp "$ENG"/modules/$m/pc/*.cpp 2>/dev/null || true)"
 	if [ "$m" = physics2d ]; then
 		T=/tmp/forge-pc/third/box2d
 		if [ ! -f $T/build-pc/libbox2d.a ]; then
@@ -42,6 +42,16 @@ for m in $MODS; do
 			(cd $T && mkdir -p build-pc && g++ -std=c++11 -O2 -w -Iinclude -Isrc -c $(cd $T && find src -name "*.cpp") && ar rcs build-pc/libbox2d.a *.o && rm -f *.o)
 		fi
 		MODINC="$MODINC -I$T/include"; MODLIB="$MODLIB $T/build-pc/libbox2d.a"
+	fi
+	if [ "$m" = phys3d ]; then
+		T=/tmp/forge-pc/third/bullet3
+		if [ ! -f $T/build-pc/libbullet.a ]; then
+			mkdir -p /tmp/forge-pc/third && (cd /tmp/forge-pc/third && [ -d bullet3 ] || git clone -q --depth 1 --branch 2.87 https://github.com/bulletphysics/bullet3.git)
+			(cd $T && mkdir -p build-pc/obj && find src/LinearMath src/BulletCollision src/BulletDynamics -name "*.cpp" | \
+				xargs -P 8 -I{} sh -c 'g++ -std=c++11 -O2 -w -fno-exceptions -Isrc -c {} -o build-pc/obj/$(echo {} | tr / _).o' && \
+				ar rcs build-pc/libbullet.a build-pc/obj/*.o && rm -rf build-pc/obj)
+		fi
+		MODINC="$MODINC -I$T/src"; MODLIB="$MODLIB $T/build-pc/libbullet.a"
 	fi
 done
 g++ -std=gnu++17 -O2 -w -I"$ENG/include" -I"$GAME/source" -I"$B/gen" $MODINC \

@@ -22,5 +22,13 @@
     "version": "1.0.0",
     "desc": "Technik-Demo unserer eigenen Engine FORGE: 3D-Arena mit Hardware-Licht (5 Lichter), Nebel, Texturen mit Mipmaps, geladenem 3D-Modell und echtem Stereo-3D. Circle Pad läuft, L/R dreht die Kamera. Bitte testen, ob alles flüssig läuft!",
     "hours": "Test für das nächste große Spiel"
+  },
+  {
+    "id": "forge_physics3d",
+    "title": "FORGE Physik Demo",
+    "genre": "Engine-Test",
+    "version": "1.0.0",
+    "desc": "Zweite Technik-Demo: echte 3D-Physik (Bullet). Figur läuft über Hügel, Treppen und Rampen, fährt Aufzug, schiebt Kisten, B löst eine Schockwelle aus, Kisten-Regen per Touch. Sag mir, ob es flüssig läuft!",
+    "hours": "Test für das nächste große Spiel"
   }
 ]

@@ -47,7 +47,7 @@ games/                   Spiele linken libforge
 | 1 ✅ | core, math, input, gfx2d (Sprites, Text, Atlas), audio, save, ui | Demo: Menü mit Knöpfen, Sound, Speichern |
 | 2 ✅ | phys2d, Tilemaps, Partikel, Kamera 2D | Demo: kleiner Plattformer |
 | 3 ✅ | gfx3d: Shader, Meshes, Licht, Stereo, Mesh-Konverter | Demo: beleuchtete 3D-Szene mit Kamera |
-| 4 | phys3d, Charakter-Controller | Demo: 3D-Figur läuft über Gelände |
+| 4 ✅ | phys3d, Charakter-Controller | Demo: 3D-Figur läuft über Gelände |
 | 5 | debug, Profiler, Doku, ein echtes Spiel auf FORGE | Roguelike als erstes Engine-Spiel |
 | 6 | Android-Backend (Thor) | Demo läuft auf Android |
 
