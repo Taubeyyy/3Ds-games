@@ -1,0 +1,16 @@
+6 tap 160 47
+12 tap 238 150
+18 shot m_vulkan
+20 tap 277 218
+30 drag 26 215 60 110 10
+44 tap 290 215
+46 speed 6
+120 tap 305 12
+128 tap 160 210
+134 tap 160 120
+142 shot n_title
+144 tap 160 95
+152 shot o_resume
+160 tap 305 12
+166 shot p_pause
+168 quit

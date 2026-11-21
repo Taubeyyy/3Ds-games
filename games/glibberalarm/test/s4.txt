@@ -1,0 +1,6 @@
+4 shot q_title
+6 tap 160 47
+14 tap 191 218
+22 tap 305 12
+30 shot r_pause
+32 quit

@@ -7,6 +7,7 @@ und kann per QR-Code mit **FBI** installiert werden.
 
 | Spiel | Genre | Beschreibung |
 |---|---|---|
+| **Glibberalarm** | Tower Defense | 10 Türme mit je 2 Upgrade-Pfaden (4 Stufen), Glibber die in kleinere zerplatzen, Geister/Panzer/Nachwachsen, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Drag & Drop per Touch. |
 | **Sternenschmiede** | Idle / Incremental | 14 Gebäude, 220+ Upgrades, Meteore, Supernova- und Urknall-Prestige, 6 Prüfungen, 142 Erfolge. Touch-Steuerung, 3D-Effekt, läuft im Standby weiter. |
 
 ## Installation
@@ -14,9 +15,11 @@ und kann per QR-Code mit **FBI** installiert werden.
 1. Website der Sammlung öffnen (GitHub Pages, Ordner `docs/`).
 2. Auf dem 3DS: **FBI → Remote Install → Scan QR Code**, den Code des Spiels scannen.
 
-Direkt-QR für Sternenschmiede:
+Direkt-QR-Codes:
 
-<img src="docs/img/sternenschmiede-qr.png" width="220">
+| Glibberalarm | Sternenschmiede |
+|---|---|
+| <img src="docs/img/glibberalarm-qr.png" width="200"> | <img src="docs/img/sternenschmiede-qr.png" width="200"> |
 
 Alternativ die `.cia` aus den [Releases](../../releases) auf die SD-Karte kopieren und mit FBI installieren,
 oder die `.3dsx` nach `sd:/3ds/` legen und über den Homebrew Launcher starten.
@@ -39,7 +42,16 @@ Ergebnis liegt in `dist/`. Bei jedem Push auf `main` baut GitHub alles neu und a
 2. In `game.cfg` eine eigene `UNIQUE_ID` und einen eigenen `PRODUCT_CODE` vergeben.
 3. Das Spiel in `docs/games.json` eintragen und Bilder nach `docs/img/` kopieren.
 
-## Entwicklung (Sternenschmiede)
+## Entwicklung
+
+Jedes Spiel trennt Logik und Grafik, z. B. bei Glibberalarm:
+
+- `source/td.c`: Türme, Glibber, Wellen, Karten (ohne 3DS-Abhängigkeiten)
+- `source/main.c`: Grafik, Touch, Sound, Speichern
+- `test/sim.c`: Bot spielt alle Karten und Schwierigkeitsgrade (Balance-Check)
+- `test/shots.sh`: Screenshots am PC
+
+Sternenschmiede:
 
 - `source/game.c`: Spiellogik ohne 3DS-Abhängigkeiten
 - `source/main.c`: Grafik, Touch, Sound, Speichern (citro2d)

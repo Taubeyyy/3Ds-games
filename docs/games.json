@@ -1,5 +1,13 @@
 [
   {
+    "id": "glibberalarm",
+    "title": "Glibberalarm",
+    "genre": "Tower Defense",
+    "version": "1.0.0",
+    "desc": "Stoppe die Glibber! 10 Tier-Türme mit je 2 Upgrade-Pfaden, Glibber die in kleinere zerplatzen, Geister-, Panzer- und Nachwachs-Glibber, Bosse, 4 Karten, 3 Schwierigkeitsgrade, Endlosmodus. Türme per Touch aufs Feld ziehen.",
+    "hours": "4 Karten × 3 Stufen, bis zu 80 Wellen"
+  },
+  {
     "id": "sternenschmiede",
     "title": "Sternenschmiede",
     "genre": "Idle / Incremental",

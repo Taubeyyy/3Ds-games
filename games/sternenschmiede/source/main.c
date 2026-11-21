@@ -710,7 +710,7 @@ static void button(float x, float y, float w, float h, u32 col, bool on, float s
 	u32 base = on ? col : C_GRAY;
 	rrect(x, y + 2, w, h, 6, C(darken(base, 0.55f)));
 	rrect(x, y, w, h, 6, C(base));
-	rrect(x + 2, y + 2, w - 4, h * 0.45f, 4, RGBA(0xFFFFFF, on ? 0.18f : 0.06f));
+	rect(x + 5, y + 2, w - 10, h * 0.42f, RGBA(0xFFFFFF, on ? 0.18f : 0.06f));
 	textFit(x + w / 2, y + (h - FONT_H * sz) / 2 + 1, sz, C(on ? 0x10142A : C_DIM), C2D_AlignCenter, w - 8, label);
 }
 

@@ -1,0 +1,26 @@
+3 shot a_title
+6 tap 160 47
+14 shot b_maps
+16 tap 191 218
+24 drag 26 215 104 126 12
+40 drag 72 215 188 120 12
+56 drag 26 215 40 106 12
+72 drag 164 215 250 150 12
+88 shot c_placed
+90 tap 104 100
+96 shot d_select
+98 tap 80 190
+104 tap 240 190
+110 shot e_upg
+112 key B
+114 tap 290 215
+116 speed 6
+118 tap 290 215
+140 shot f_wave1
+150 tap 305 12
+158 tap 160 165
+164 tap 160 63
+170 speed 6
+400 shot g_wave
+700 shot h_wave
+702 quit
