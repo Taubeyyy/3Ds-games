@@ -41,6 +41,7 @@ struct Door {
 	float yaw = 0;
 	int room = 0, reward = 0, god = -1, mod = 0;
 	bool active = false;
+	float t = 0;
 };
 
 struct Obstacle { int mesh; Vec3 pos; float r, yaw, scale; bool fire; };
@@ -57,7 +58,7 @@ public:
 		float comboWindow = 0, dashCd = 0, specialCd = 0, castRecharge = 0, dashRecharge = 0, afterDash = 9;
 		int castCharges = 2, dashCharges = 2;
 		Vec3 dashDir;
-		float ghostTimer = 0, stepT = 0, flash = 0, iframe = 0, armorT = 0, critNext = 0, dead = 0;
+		float ghostTimer = 0, stepT = 0, flash = 0, iframe = 0, armorT = 0, critNext = 0, dead = 0, runPhase = 0, runK = 0;
 		Pose pose;
 	} hero;
 	Mods mods;

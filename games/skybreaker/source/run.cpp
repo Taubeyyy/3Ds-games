@@ -27,7 +27,8 @@ static const int NEVENTS = sizeof(EVENTS) / sizeof(EVENTS[0]);
 
 static struct Run {
 	int room, state, roomType, reward, god, mod, wave, waves;
-	float st, bannerT, meteorT, quitArm;
+	float st, bannerT, meteorT, quitArm, transT, fadeIn, clearT = 9;
+	Door nextDoor;
 	int coins, splitter, startKills;
 	int choice, nOffers, sel, eventId, cameoGod;
 	Offer offers[3];
@@ -229,6 +230,7 @@ static void takePickup() {
 static void roomCleared() {
 	R.state = RS_CLEARED;
 	R.st = 0;
+	R.clearT = 0;
 	R.splitter += 1 + (R.roomType == RT_ELITE ? 3 : 0) + (R.roomType == RT_CHALLENGE ? 3 : 0);
 	if (R.roomType == RT_CHALLENGE) R.coins += 40;
 	if (R.roomType == RT_ELITE) R.coins += 30;
@@ -366,6 +368,18 @@ void runUpdate(float dt, const Input &inReal) {
 		if (in.pressed(KEY_A) && R.st > 0.3f) choose(R.choice == CK_SHOP && getenvBot() ? 3 : R.sel);
 		return;
 	}
+	R.fadeIn = fmaxf(0, R.fadeIn - dt * 2.5f);
+	R.clearT += dt;
+	if (R.transT > 0) {
+		R.transT -= dt;
+		AR.hero.pos += Vec3(R.nextDoor.pos.x - AR.hero.pos.x, 0, R.nextDoor.pos.z - AR.hero.pos.z) * fminf(1, dt * 6);
+		if (R.transT <= 0) {
+			R.room++;
+			enterRoom(R.nextDoor.room, R.nextDoor.reward, R.nextDoor.god, R.nextDoor.mod);
+			R.fadeIn = 1;
+		}
+		return;
+	}
 	AR.update(dt, in);
 	if (AR.coinsGained) R.coins += AR.coinsGained;
 	if (AR.heroDied) { finishRun(false); return; }
@@ -391,10 +405,10 @@ void runUpdate(float dt, const Input &inReal) {
 	case RS_CLEARED:
 		break;
 	case RS_DOORS:
-		if (AR.doorEntered >= 0) {
-			Door d = AR.doors[AR.doorEntered];
-			R.room++;
-			enterRoom(d.room, d.reward, d.god, d.mod);
+		if (AR.doorEntered >= 0 && R.transT <= 0) {
+			R.nextDoor = AR.doors[AR.doorEntered];
+			R.transT = 0.35f;
+			sfx(A.whoosh, 1.2f, 0.7f);
 		}
 		break;
 	}
@@ -524,7 +538,7 @@ void runDraw(Gfx &g) {
 				g.rrect(60, 222, 280, 10, 4, Color(0x000000, 0.7f), Color(0x000000, 0.7f), -2);
 				g.rrect(61, 223, 278 * clampf(e.hp / e.maxHp, 0, 1), 8, 3, Color(0xFF5A3A), Color(0xA0201A), -2);
 			}
-		if (R.bannerT < 2.2f && R.state != RS_DEAD && R.state != RS_WIN) {
+		if (R.bannerT < 2.2f && R.state != RS_DEAD && R.state != RS_WIN && R.roomType != RT_BOSS) {
 			float a = R.bannerT < 0.3f ? R.bannerT / 0.3f : R.bannerT > 1.7f ? (2.2f - R.bannerT) / 0.5f : 1;
 			char b[48];
 			snprintf(b, sizeof b, "Raum %d · %s", R.room, ROOM_NAME[R.roomType]);
@@ -538,6 +552,21 @@ void runDraw(Gfx &g) {
 			g.text(200, 80, 1.0f, R.state == RS_WIN ? Color(0xFFE08A, a) : Color(0xFF8A8A, a), R.state == RS_WIN ? "Der Turm erzittert!" : "Gefallen", ALIGN_CENTER, 0, true, -3);
 			g.text(200, 120, 0.45f, Color(0xFFFFFF, a), R.state == RS_WIN ? "Du hast den Wächter besiegt." : "Die Sterne tragen dich zurück ins Lager.", ALIGN_CENTER, 0, true, -3);
 		}
+		if (R.clearT < 1.6f && R.state != RS_WIN) {
+			float k = R.clearT;
+			float a = k < 1.1f ? 1 : 1 - (k - 1.1f) / 0.5f;
+			float sc = k < 0.15f ? 1.6f - k * 4 : 1.0f;
+			g.image(A.ui[UI_P_GLOW], 200, 108, 6, 1.6f, 0, Color(0xFFE08A, 0.35f * a), 1, -2);
+			g.text(200, 92, 0.95f * sc, Color(0xFFF0C8, a), "GESCHAFFT!", ALIGN_CENTER, 0, true, -3);
+		}
+		if (R.roomType == RT_BOSS && R.bannerT < 2.6f) {
+			float a = R.bannerT < 0.3f ? R.bannerT / 0.3f : R.bannerT > 2.0f ? (2.6f - R.bannerT) / 0.6f : 1;
+			g.rect(0, 92, 400, 54, Color(0x200008, 0.7f * a), -2);
+			g.text(200, 98, 0.9f, Color(0xFF8A6A, a), "WÄCHTER DES TURMS", ALIGN_CENTER, 0, true, -3);
+			g.text(200, 128, 0.36f, Color(0xFFD8C8, a), "Der letzte Hüter vor dem zerbrochenen Himmel", ALIGN_CENTER, 0, true, -3);
+		}
+		float fa = R.transT > 0 ? 1 - R.transT / 0.35f : R.fadeIn;
+		if (fa > 0) g.rect(0, 0, 400, 240, Color(0x06040E, clampf(fa, 0, 1)), -4);
 		ui::drawToasts(g, 4);
 		return;
 	}

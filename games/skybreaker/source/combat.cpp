@@ -711,9 +711,15 @@ void Arena::update(float dt, const Input &in) {
 		h.act = ACT_DSTRIKE; h.actT = 0; h.actDur = 0.3f; h.hitDone = false;
 		sfx(A.swing3, 1.2f, 0.8f);
 	}
+	{
+		float spd = flat(h.vel).len();
+		float want = h.act == ACT_NONE ? clampf(spd / 5.0f, 0, 1) : 0;
+		h.runK += (want - h.runK) * fminf(1, dt * 10);
+		h.runPhase += dt * (4 + spd * 1.6f);
+	}
 	if (h.act == ACT_NONE) {
-		h.pose.armYaw += (0 - h.pose.armYaw) * fminf(1, dt * 12);
-		h.pose.armLift += (0.05f * sinf(time * 2) - h.pose.armLift) * fminf(1, dt * 12);
+		h.pose.armYaw += (-0.15f * h.runK - h.pose.armYaw) * fminf(1, dt * 12);
+		h.pose.armLift += (0.05f * sinf(time * 2) + sinf(h.runPhase) * 0.45f * h.runK - h.pose.armLift) * fminf(1, dt * 14);
 		h.pose.weaponBlend += (0 - h.pose.weaponBlend) * fminf(1, dt * 10);
 		h.pose.bodyTwist += (0 - h.pose.bodyTwist) * fminf(1, dt * 12);
 	}
@@ -812,11 +818,23 @@ void Arena::update(float dt, const Input &in) {
 	}
 	// Belohnung und Türen
 	if (pickup.active) {
+		float pb = pickup.t;
 		pickup.t += dt;
+		if (pb < 0.5f && pickup.t >= 0.5f && pickup.kind < PK2_SHOP) {
+			g_fx.emit(pickup.pos + Vec3(0, 0.6f, 0), 20, UI_P_SPARK, Color(0xFFFFFF), Color(pickup.kind == PK2_BOON ? godColor(pickup.god) : 0xFFE08A, 0), 5, 0.6f, 0.25f, 0.03f, 1, Vec3(0, 1, 0), 1);
+			sfx(A.select, 1.3f, 0.6f);
+		}
 		if (flat(h.pos - pickup.pos).len() < (pickup.kind >= PK2_SHOP ? 1.25f : 0.8f) && pickup.t > 0.4f) { pickup.active = false; pickupTaken = true; sfx(A.chime, 1.1f, 0.8f); }
 	}
-	for (int i = 0; i < 3; i++)
-		if (doors[i].active && !pickup.active && flat(h.pos - doors[i].pos).len() < 1.0f) doorEntered = i;
+	for (int i = 0; i < 3; i++) {
+		Door &d = doors[i];
+		if (!d.active) continue;
+		float before = d.t;
+		d.t += dt;
+		if (before < 0.05f && d.t >= 0.05f) g_fx.emit(d.pos + Vec3(0, 0.1f, 0), 16, UI_P_DUST, Color(0xD8D0E0), Color(0x8A8098, 0), 3, 0.8f, 0.2f, 0.1f, 2, Vec3(0, 1, 0), 1.2f);
+		if (before < 0.7f && d.t >= 0.7f) { sfx(A.hitHeavy, 0.6f, 0.4f); if (S.shake) g_shake = fmaxf(g_shake, 0.12f); }
+		if (d.t > 0.75f && !pickup.active && flat(h.pos - d.pos).len() < 1.0f) doorEntered = i;
+	}
 	g_comboT += dt;
 	if (time - g_lastHitT > 1.6f) chain = 0;
 	g_camFocus = g_camFocus + (Vec3(h.pos.x * 0.7f, 0, h.pos.z * 0.6f - 0.4f) - g_camFocus) * fminf(1, dt * 5);
@@ -855,8 +873,16 @@ static void drawEnemy(const Enemy &e, float t) {
 	float hover = e.type == EN_WISP ? 0.25f + 0.12f * sinf(e.bob * 2.5f) : 0;
 	float squash = (e.state == 2 ? 0.92f : 1) * (e.type == EN_CRAWLER || e.type == EN_BOMBER ? 1 + 0.06f * sinf(e.bob * 18) : 1 + 0.02f * sinf(e.bob * 3));
 	float lean = e.state == 3 ? 0.35f : e.state == 2 ? -0.18f : 0;
+	float moving = clampf(Vec3(e.vel.x, 0, e.vel.z).len() / 2.5f, 0, 1);
+	float roll = 0;
+	if (e.type == EN_CRAWLER || e.type == EN_BOMBER) roll = sinf(e.bob * 22) * 0.09f * moving;
+	else if (e.type == EN_SHARD) { roll = sinf(e.bob * 9) * 0.07f * moving; rise += fabsf(sinf(e.bob * 9)) * 0.06f * moving; }
+	else if (e.type == EN_BRUTE || e.type == EN_BOSS) roll = sinf(e.bob * 5) * 0.05f * moving;
+	float hitSq = e.flash > 0.3f && e.state != 2 ? (e.flash - 0.3f) * 0.25f : 0;
+	float spinDie = e.state == 5 ? clampf(e.st / 0.45f, 0, 1) * 4.0f : 0;
 	if (e.type == EN_BRUTE || e.type == EN_BOSS) lean = e.state == 2 ? -0.3f * clampf(e.st * 2, 0, 1) : e.state == 4 && e.st < 0.2f ? 0.4f : 0;
-	Mat4 xf = Mat4::translate(e.pos + Vec3(0, rise + hover, 0)) * Mat4::rotY(e.yaw) * Mat4::rotX(lean) * Mat4::scale(Vec3(s * k, s * k * squash, s * k));
+	Mat4 xf = Mat4::translate(e.pos + Vec3(0, rise + hover, 0)) * Mat4::rotY(e.yaw + spinDie) * Mat4::rotX(lean) * Mat4::rotZ(roll) *
+		Mat4::scale(Vec3(s * k * (1 + hitSq), s * k * squash * (1 - hitSq), s * k * (1 + hitSq)));
 	if (e.type == EN_DUMMY) {
 		gfx3d::draw(A.world[WM_DUMMY_BASE], Mat4::translate(e.pos) * Mat4::rotY(0.3f), m);
 		gfx3d::draw(A.world[WM_DUMMY_TOP], Mat4::translate(e.pos + Vec3(0, 0.5f, 0)) * Mat4::rotX(e.wobZ) * Mat4::rotZ(-e.wobX) * Mat4::rotY(0.3f), m);
@@ -928,23 +954,28 @@ void Arena::draw(Gfx &g) {
 	// Türen
 	for (const Door &d : doors) {
 		if (!d.active) continue;
-		Mat4 dm = Mat4::translate(d.pos) * Mat4::rotY(d.yaw) * Mat4::scale(Vec3(0.8f, 0.8f, 0.8f));
+		float up = clampf(d.t / 0.7f, 0, 1);
+		up = 1 - (1 - up) * (1 - up) * (1 - up);
+		float shakeD = d.t < 0.7f ? sinf(d.t * 70) * 0.03f : 0;
+		Mat4 dm = Mat4::translate(d.pos + Vec3(shakeD, -(1 - up) * 2.8f, 0)) * Mat4::rotY(d.yaw) * Mat4::scale(Vec3(0.8f, 0.8f, 0.8f));
 		gfx3d::draw(A.world[WM_R_DOOR], dm, lit);
 		Material pm; pm.lit = false;
 		Color pc(d.reward == PK2_BOON ? godColor(d.god) : d.room == RT_SHOP ? 0xFFD25A : d.room == RT_BOSS ? 0xFF4A3A : 0xB0D8FF);
-		pm.color = pc.alpha(pickup.active ? 0.15f : 0.55f + 0.2f * sinf(t * 3));
+		pm.color = pc.alpha((pickup.active ? 0.15f : 0.55f + 0.2f * sinf(t * 3)) * clampf((d.t - 0.5f) * 3, 0, 1));
 		gfx3d::draw(A.world[WM_R_PORTAL], dm, pm);
 	}
 	// Belohnung
 	if (pickup.active) {
-		Vec3 pp = pickup.pos + Vec3(0, 0.6f + 0.12f * sinf(t * 2.5f), 0);
+		float dropK = clampf(pickup.t / 0.5f, 0, 1);
+		float drop = (1 - dropK) * (1 - dropK) * 4;
+		Vec3 pp = pickup.pos + Vec3(0, 0.6f + 0.12f * sinf(t * 2.5f) + drop, 0);
 		Mat4 pm = Mat4::translate(pp) * Mat4::rotY(t * 1.5f);
 		Material g2; g2.lit = false;
 		switch (pickup.kind) {
-		case PK2_COINS: gfx3d::draw(A.world[WM_R_COINS], Mat4::translate(pickup.pos + Vec3(0, 0.08f, 0)) * Mat4::scale(Vec3(1.6f, 1.6f, 1.6f)), lit); break;
+		case PK2_COINS: gfx3d::draw(A.world[WM_R_COINS], Mat4::translate(pickup.pos + Vec3(0, 0.08f + drop, 0)) * Mat4::scale(Vec3(1.6f, 1.6f, 1.6f)), lit); break;
 		case PK2_HEART: gfx3d::draw(A.world[WM_R_HEART], pm * Mat4::scale(Vec3(1.6f, 1.6f, 1.6f)), g2); break;
-		case PK2_ANVIL: gfx3d::draw(A.world[WM_R_ANVIL], Mat4::translate(pickup.pos + Vec3(0, 0.08f, 0)) * Mat4::rotY(0.4f), lit); break;
-		case PK2_CHEST: gfx3d::draw(A.world[WM_R_CHEST], Mat4::translate(pickup.pos + Vec3(0, 0.08f, 0)), lit); break;
+		case PK2_ANVIL: gfx3d::draw(A.world[WM_R_ANVIL], Mat4::translate(pickup.pos + Vec3(0, 0.08f + drop, 0)) * Mat4::rotY(0.4f), lit); break;
+		case PK2_CHEST: gfx3d::draw(A.world[WM_R_CHEST], Mat4::translate(pickup.pos + Vec3(0, 0.08f + drop, 0)), lit); break;
 		case PK2_GEM: case PK2_POWER: gfx3d::draw(A.world[WM_R_GEM], pm * Mat4::scale(Vec3(1.5f, 1.5f, 1.5f)), g2); break;
 		case PK2_BOON: g2.color = Color(godColor(pickup.god)); gfx3d::draw(A.shard, pm * Mat4::scale(Vec3(2.4f, 2.4f, 2.4f)), g2); break;
 		case PK2_SHOP:
@@ -987,7 +1018,10 @@ void Arena::draw(Gfx &g) {
 	bool blink = h.iframe > 0 && h.act != ACT_DASH && fmodf(t * 20, 2) < 1;
 	if (!blink) {
 		float fall = h.dead > 0 ? clampf(h.dead * 2, 0, 1) : 0;
-		Mat4 hx = Mat4::translate(h.pos) * Mat4::rotY(h.yaw) * Mat4::rotX(-fall * 1.3f);
+		float bob = fabsf(sinf(h.runPhase)) * 0.07f * h.runK;
+		float lean = 0.16f * h.runK + (h.act == ACT_DASH ? 0.35f : 0) + (h.act == ACT_ATTACK || h.act == ACT_DSTRIKE ? 0.1f : 0);
+		float roll = sinf(h.runPhase) * 0.05f * h.runK;
+		Mat4 hx = Mat4::translate(h.pos + Vec3(0, bob, 0)) * Mat4::rotY(h.yaw) * Mat4::rotX(lean - fall * 1.3f) * Mat4::rotZ(roll);
 		drawChar(CH_SEREN, hx, t, &h.pose, fmaxf(h.flash, h.armorT > 0 ? 0.25f : 0));
 	}
 	Material pg; pg.lit = false;
@@ -1040,13 +1074,13 @@ void Arena::draw(Gfx &g) {
 		if (e.poison > 0) g.circle(sp.x + w / 2 + 11, sp.y + 1, 2.5f, Color(0x9AE040), dep);
 		if (e.slowT > 0) g.circle(sp.x + w / 2 + 17, sp.y + 1, 2.5f, Color(0x3CDCD2), dep);
 	}
-	if (pickup.active && gfx3d::project(g, cam, pickup.pos + Vec3(0, 0.6f, 0), &sp, &dep)) {
+	if (pickup.active && pickup.t > 0.45f && gfx3d::project(g, cam, pickup.pos + Vec3(0, 0.6f, 0), &sp, &dep)) {
 		g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 1.4f, 1.4f, 0, Color(pickup.kind == PK2_BOON ? godColor(pickup.god) : 0xFFE08A, 0.55f), 1, dep);
 		g.image(A.ui[pickIcon(pickup.kind, pickup.god)], sp.x, sp.y - 34, 0.6f, 0.6f, 0, Color(0xFFFFFF), 0, dep - 0.5f);
 	}
 	for (const Door &d : doors) {
-		if (!d.active || !gfx3d::project(g, cam, d.pos + Vec3(0, 3.0f, 0), &sp, &dep)) continue;
-		float a = pickup.active ? 0.35f : 1;
+		if (!d.active || d.t < 0.6f || !gfx3d::project(g, cam, d.pos + Vec3(0, 3.0f, 0), &sp, &dep)) continue;
+		float a = (pickup.active ? 0.35f : 1) * clampf((d.t - 0.6f) * 4, 0, 1);
 		float bob = sinf(t * 2.5f + d.pos.x) * 2;
 		int ri = ROOM_ICON[d.room];
 		if (ri >= 0 && d.room != RT_COMBAT) g.image(A.ui[ri], sp.x - 16, sp.y + bob + 4, 0.55f, 0.55f, 0, Color(0xFFFFFF, a), 0, dep - 0.5f);
