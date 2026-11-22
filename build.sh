@@ -31,7 +31,7 @@ for dir in $DIRS; do
   bannertool makebanner -i "$dir/meta/banner.png" -a "$dir/meta/banner.wav" -o "$out/banner.bnr" >/dev/null
   bannertool makesmdh -s "$TITLE" -l "$DESC" -p "$AUTHOR" -i "$dir/meta/icon.png" -o "$out/icon.smdh" >/dev/null
   IFS=. read MA MI MC <<< "$VERSION"
-  makerom -f cia -o "dist/$NAME.cia" -target t -exefslogo -elf "$dir/$NAME.elf" -rsf tools/cia.rsf \
+  makerom -f cia -o "dist/$NAME.cia" -target t -elf "$dir/$NAME.elf" -rsf tools/cia.rsf \
     -icon "$out/icon.smdh" -banner "$out/banner.bnr" -major $MA -minor $MI -micro $MC \
     -DAPP_TITLE="$TITLE" -DAPP_PRODUCT_CODE="$PRODUCT_CODE" -DAPP_UNIQUE_ID="$UNIQUE_ID" \
     -DAPP_SYSTEM_MODE=64MB -DAPP_SYSTEM_MODE_EXT=Legacy -DAPP_CATEGORY=Application \
