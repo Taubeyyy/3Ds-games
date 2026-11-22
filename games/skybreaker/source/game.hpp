@@ -17,9 +17,10 @@ extern const CharInfo CHAR_INFO[CH_COUNT];
 
 // ------------------------------------------------------------------ Assets
 struct Assets {
-	SpriteSheet uiSheet, bgSheet;
+	SpriteSheet uiSheet, bgSheet, bg2Sheet;
 	Image ui[UI_COUNT];
 	Image bg[BG_COUNT];
+	Image bg2[BG2_COUNT];
 	Mesh world[WM_COUNT];
 	Mesh slash, ring, disc, shard;
 	Sound theme;
@@ -31,6 +32,8 @@ extern Assets A;
 
 struct CharModel {
 	Mesh part[PK_COUNT];
+	Mesh hull[PK_COUNT];   // dunkler Umriss (nur Heldin)
+	bool hasHull[PK_COUNT];
 	Vec3 pivot[PK_COUNT];
 	bool has[PK_COUNT];
 };

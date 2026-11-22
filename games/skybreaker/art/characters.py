@@ -129,8 +129,8 @@ def seren():
 
 # ------------------------------------------------------------------ Seren als Schatten-Kriegerin
 def schatten():
-    CLOTH, CLOTH2, DARK = rgb(0x3A3050), rgb(0x2A223C), rgb(0x1C1626)
-    LEATHER, METAL, TRIM = rgb(0x3A2E3A), rgb(0x5E5C70), rgb(0x8A5AC8)
+    CLOTH, CLOTH2, DARK = rgb(0x52457A), rgb(0x3A2F58), rgb(0x241C34)
+    LEATHER, METAL, TRIM = rgb(0x5A4450), rgb(0x8A88A4), rgb(0xA874F0)
     MASK, EYE, SHADOW, BLADE = rgb(0x1A1622), rgb(0x8AF0FF), rgb(0x9A6AFF), rgb(0x4A4660)
     b = Mesh()
     # Hüfte/Gürtel, Torso, Kopf mit Kapuze und Maske

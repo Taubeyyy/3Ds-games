@@ -11,6 +11,13 @@ Figuren schauen nach +Z. Vorderseite = gegen den Uhrzeigersinn von außen gesehe
 import math, random, struct
 
 
+QUALITY = 1.0   # Segment-Multiplikator (Rundungen); Figuren setzen ihn höher
+
+
+def _seg(n):
+    return max(3, int(round(n * QUALITY)))
+
+
 # ------------------------------------------------------------------ Farben
 def rgb(h, a=255):
     return ((h >> 16) & 255, (h >> 8) & 255, h & 255, a)
@@ -127,19 +134,27 @@ class Mesh:
         ps = [p for t in self.tris for p in t[:3]]
         return tuple(min(p[i] for p in ps) for i in range(3)), tuple(max(p[i] for p in ps) for i in range(3))
 
-    def save(self, path, smooth=False):
+    def save(self, path, smooth=False, angle=48):
+        """smooth: Auto-Glättung – Normalen werden nur über Flächen gemittelt, die weniger als 'angle' Grad abweichen"""
         verts, idx, look = [], [], {}
+        acc = {}
         if smooth:
-            acc = {}
             for a, b, c, col in self.tris:
                 n = cross(sub(b, a), sub(c, a))
                 for p in (a, b, c):
-                    k = (round(p[0], 4), round(p[1], 4), round(p[2], 4))
-                    s = acc.get(k, (0, 0, 0)); acc[k] = (s[0] + n[0], s[1] + n[1], s[2] + n[2])
+                    acc.setdefault((round(p[0], 4), round(p[1], 4), round(p[2], 4)), []).append(n)
+        cosA = math.cos(math.radians(angle))
         for a, b, c, col in self.tris:
             fn = norm(cross(sub(b, a), sub(c, a)))
             for p in (a, b, c):
-                n = norm(acc[(round(p[0], 4), round(p[1], 4), round(p[2], 4))]) if smooth else fn
+                if smooth:
+                    sx = sy = sz = 0.0
+                    for n2 in acc[(round(p[0], 4), round(p[1], 4), round(p[2], 4))]:
+                        if dot(norm(n2), fn) >= cosA:
+                            sx += n2[0]; sy += n2[1]; sz += n2[2]
+                    n = norm((sx, sy, sz)) if (sx or sy or sz) else fn
+                else:
+                    n = fn
                 key = (round(p[0], 5), round(p[1], 5), round(p[2], 5), round(n[0], 3), round(n[1], 3), round(n[2], 3), col)
                 if key not in look:
                     look[key] = len(verts); verts.append((p, n, col))
@@ -162,6 +177,7 @@ def _det3(m):
 # ------------------------------------------------------------------ Grundformen
 def lathe(profile, seg, col, phase=0.0, cap_bottom=True, cap_top=True, colors=None):
     """Drehkörper um Y. profile: [(radius, y), ...] von unten nach oben. colors: Farbe je Ring-Abschnitt."""
+    seg = _seg(seg)
     m = Mesh()
     ang = [phase + 2 * math.pi * i / seg for i in range(seg)]
     def P(r, y, a): return (r * math.sin(a), y, r * math.cos(a))
@@ -211,6 +227,7 @@ def box(sx, sy, sz, col, top=1.0, topz=None):
 
 
 def sphere(r, seg, rings, col, squash=1.0):
+    rings = _seg(rings)
     prof = [(r * math.sin(math.pi * k / rings), -r * math.cos(math.pi * k / rings) * squash) for k in range(rings + 1)]
     return lathe(prof, seg, col, cap_bottom=False, cap_top=False)
 
@@ -278,6 +295,7 @@ def blade(length, width, thick, col, edge=None, tip=0.25):
 
 def tube(points, radii, seg, col, colors=None):
     """Röhre entlang einer Punktkette (Haarsträhnen, Ranken, Hörner, Schals)"""
+    seg = _seg(seg)
     m = Mesh()
     rings = []
     for k, p in enumerate(points):
@@ -322,6 +340,7 @@ def _orient_tube(m, pts):
 
 def ring(r, thick, seg, col, tseg=4):
     """Torus in der XZ-Ebene (Heiligenschein, Armreif, Wasserring)"""
+    seg = _seg(seg)
     m = Mesh()
     for i in range(seg):
         for j in range(tseg):

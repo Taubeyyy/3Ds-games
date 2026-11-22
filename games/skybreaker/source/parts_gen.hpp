@@ -156,6 +156,18 @@ static const PartSrc PART_SRC[] = {
 	{7, PK_PET, sylv_pet_fmesh, sylv_pet_fmesh_size},
 };
 enum WorldMesh { WM_E_ARCHER_BODY, WM_E_ARCHER_GLOW, WM_E_BOMBER_BODY, WM_E_BOMBER_GLOW, WM_E_BRUTE_BODY, WM_E_BRUTE_GLOW, WM_E_CRAWLER_BODY, WM_E_CRAWLER_GLOW, WM_E_GEODE_BODY, WM_E_GEODE_GLOW, WM_E_QUEEN_BODY, WM_E_QUEEN_GLOW, WM_E_SHARD_BODY, WM_E_SHARD_GLOW, WM_E_SPIDER_BODY, WM_E_SPIDER_GLOW, WM_E_WISP_BODY, WM_E_WISP_GLOW, WM_R_ALTAR, WM_R_ALTAR_GLOW, WM_R_ANVIL, WM_R_CHEST, WM_R_COINS, WM_R_COLUMN, WM_R_DAGGER, WM_R_DAGGER_GLOW, WM_R_DOOR, WM_R_FOUNTAIN, WM_R_GEM, WM_R_HEART, WM_R_HUBDECOR, WM_R_PORTAL, WM_R_RACK, WM_R_ROCK, WM_R_SCYTHE, WM_R_SCYTHE_GLOW, WM_R_SHRINE, WM_R_WATER, WM_ARENA, WM_ARENA_CAVE, WM_ARENA_DARK, WM_ARENA_GLOW, WM_BRAZIER, WM_BRAZIER_FIRE, WM_CAVE, WM_CAVE_GLOW, WM_DUMMY_BASE, WM_DUMMY_TOP, WM_DWALL, WM_DWALL_FIRE, WM_ISLAND, WM_ISLAND_PLAIN, WM_PEDESTAL, WM_PEDESTAL_GLOW, WM_SHARD_A, WM_SHARD_B, WM_SHARD_C, WM_TOWER, WM_TOWER_CRYSTALS, WM_TOWER_GLOW, WM_COUNT };
+#include "hull_body_fmesh.h"
+#include "hull_arm_fmesh.h"
+#include "hull_arm_l_fmesh.h"
+#include "hull_leg_l_fmesh.h"
+#include "hull_leg_r_fmesh.h"
+static const PartSrc HULL_SRC[] = {
+	{0, PK_BODY, hull_body_fmesh, hull_body_fmesh_size},
+	{0, PK_ARM, hull_arm_fmesh, hull_arm_fmesh_size},
+	{0, PK_ARM_L, hull_arm_l_fmesh, hull_arm_l_fmesh_size},
+	{0, PK_LEG_L, hull_leg_l_fmesh, hull_leg_l_fmesh_size},
+	{0, PK_LEG_R, hull_leg_r_fmesh, hull_leg_r_fmesh_size},
+};
 static const PartSrc WORLD_SRC[] = {
 	{0, 0, e_archer_body_fmesh, e_archer_body_fmesh_size},
 	{1, 0, e_archer_glow_fmesh, e_archer_glow_fmesh_size},

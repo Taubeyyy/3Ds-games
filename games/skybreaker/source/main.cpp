@@ -139,7 +139,7 @@ void titleDraw(Gfx &g) {
 		ui::drawToasts(g, 186);
 		return;
 	}
-	g.imageAt(A.bg[BG_BOTTOM], 0, 0);
+	g.imageAt(A.bg2[BG2_MENU], 0, 0);
 	if (g_phase == 0) {
 		float a = fminf(1, g_sceneT * 1.5f);
 		g.image(A.ui[UI_SELECT], 160, 100, 1.5f, 1.5f, g_time * 0.4f, Color(0xFFE0A0, 0.6f * a), 0);
@@ -184,7 +184,7 @@ void optionsUpdate(float dt, const Input &in) {
 }
 void optionsDraw(Gfx &g) {
 	if (g.screen == Screen::Top) { titleDrawTop(g, 1); return; }
-	g.imageAt(A.bg[BG_BOTTOM], 0, 0);
+	g.imageAt(A.bg2[BG2_MENU], 0, 0);
 	g.text(160, 8, 0.5f, Color(0xE8C060), "OPTIONEN", ALIGN_CENTER);
 	ui::toggle(g, 51, 10, 34, "Musik", S.music);
 	ui::toggle(g, 52, 10, 68, "Soundeffekte", S.sfx);

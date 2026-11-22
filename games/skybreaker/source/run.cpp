@@ -479,22 +479,25 @@ void drawGodCameo(Gfx &g, int god, float t, float appear) {
 }
 
 static void drawCard(Gfx &g, int id, float x, float y, const Offer &o, bool sel) {
-	float k = sel ? 1.0f : 0.92f;
-	g.image(A.ui[sel ? UI_CARD : UI_CARD_OFF], x + 48, y + 44, k, k * 0.74f, 0, Color(0xFFFFFF));
-	if (sel) g.image(A.ui[UI_P_GLOW], x + 48, y + 44, 2.2f, 2.0f, 0, Color(o.anvil >= 0 ? 0xE8C060 : godColor(o.god), 0.3f), 1);
+	Color gc(o.anvil >= 0 ? 0xE8C060 : godColor(o.god));
+	if (sel) {
+		g.additive(true);
+		g.image(A.ui[UI_P_GLOW], x + 48, y + 44, 2.4f, 2.2f, 0, gc.alpha(0.45f), 1);
+		g.additive(false);
+		g.rect(x + 10, y + 89, 76, 2, gc);
+	}
 	int icon = o.anvil >= 0 ? UI_ICON_ANVIL : UI_SIGIL_SEREN + o.god;
-	g.image(A.ui[icon], x + 48, y + 26, o.anvil >= 0 ? 0.75f : 0.5f, o.anvil >= 0 ? 0.75f : 0.5f, 0, Color(0xFFFFFF, sel ? 1.f : 0.8f));
+	float bob = sel ? sinf(g_time * 3) * 1.5f : 0;
+	g.image(A.ui[icon], x + 48, y + 28 + bob, o.anvil >= 0 ? 0.8f : 0.56f, o.anvil >= 0 ? 0.8f : 0.56f, 0, Color(0xFFFFFF, sel ? 1.f : 0.75f));
 	const char *nm = o.anvil >= 0 ? anvilName(o.anvil) : boonName(o.god, o.slot);
-	g.text(x + 48, y + 50, 0.4f, Color(sel ? 0xFFFFFF : 0xC8C4E0), nm, ALIGN_CENTER, 92);
-	if (o.anvil < 0) g.text(x + 48, y + 68, 0.34f, Color(RARITY_COL[o.rarity]), RARITY_NAME[o.rarity], ALIGN_CENTER, 92);
-	ui::hit(id, x, y, 96, 90);
+	g.text(x + 48, y + 54, 0.38f, Color(sel ? 0xFFFFFF : 0xC8C4E0), nm, ALIGN_CENTER, 90);
+	if (o.anvil < 0) g.text(x + 48, y + 72, 0.32f, Color(RARITY_COL[o.rarity]), RARITY_NAME[o.rarity], ALIGN_CENTER, 90);
+	ui::hit(id, x, y, 96, 92);
 }
 
 // große Beschreibung der ausgewählten Karte
 static void drawOfferInfo(Gfx &g, const Offer &o) {
-	g.rrect(6, 128, 308, 84, 10, Color(0x14102C, 0.95f), Color(0x0A0818, 0.95f));
 	Color c(o.anvil >= 0 ? 0xE8C060 : godColor(o.god));
-	g.rect(6, 128, 308, 3, c);
 	const char *nm = o.anvil >= 0 ? anvilName(o.anvil) : boonName(o.god, o.slot);
 	g.text(16, 134, 0.5f, c.lighten(0.3f), nm, ALIGN_LEFT);
 	if (o.anvil < 0) {
@@ -510,55 +513,66 @@ static void drawOfferInfo(Gfx &g, const Offer &o) {
 
 static void drawHud(Gfx &g) {
 	char b[64];
+	g.imageAt(A.bg2[BG2_RUN], 0, 0);
 	float hp = AR.hero.hp, mx = float(AR.mods.maxHp);
 	snprintf(b, sizeof b, "Raum %d/%d", R.room, LAST_ROOM);
-	g.text(8, 6, 0.4f, Color(0xE8C060), b, ALIGN_LEFT);
-	g.text(160, 6, 0.4f, Color(0xD8D0F0), ROOM_NAME[R.roomType], ALIGN_CENTER);
-	g.image(A.ui[UI_ICON_COIN], 248, 14, 0.4f, 0.4f, 0, Color(0xFFFFFF));
+	g.text(12, 4, 0.4f, Color(0xE8C060), b, ALIGN_LEFT);
+	g.text(160, 4, 0.4f, Color(0xE8E0F8), R.roomType == RT_COMBAT ? LAYOUT_NAME[AR.layout] : ROOM_NAME[R.roomType], ALIGN_CENTER);
+	g.image(A.ui[UI_ICON_COIN], 246, 11, 0.36f, 0.36f, 0, Color(0xFFFFFF));
 	snprintf(b, sizeof b, "%d", R.coins);
-	g.text(259, 6, 0.4f, Color(0xFFD25A), b, ALIGN_LEFT);
-	g.image(A.ui[UI_ICON_GEM], 292, 14, 0.4f, 0.4f, 0, Color(0xFFFFFF));
+	g.text(256, 4, 0.4f, Color(0xFFD25A), b, ALIGN_LEFT);
+	g.image(A.ui[UI_ICON_GEM], 288, 11, 0.36f, 0.36f, 0, Color(0xFFFFFF));
 	snprintf(b, sizeof b, "%d", R.splitter);
-	g.text(303, 6, 0.4f, Color(0x8AF0FF), b, ALIGN_LEFT);
-	// Leben
-	g.rrect(8, 26, 304, 18, 6, Color(0x1A0A14), Color(0x1A0A14));
+	g.text(298, 4, 0.4f, Color(0x8AF0FF), b, ALIGN_LEFT);
+	// Lebensleiste
 	float k = clampf(hp / mx, 0, 1);
-	if (k > 0) g.rrect(10, 28, 300 * k, 14, 5, Color(0xFF6A7A), Color(0xC8283A));
+	static float shown = 1;
+	shown += (k - shown) * 0.08f;
+	if (shown > k) g.imageAt(A.ui[UI_HP_FILL], 11, 28, 298 * shown / 64, 14.0f / 16, Color(0xFFE0A0, 0.55f));
+	if (k > 0) g.imageAt(A.ui[UI_HP_FILL], 11, 28, 298 * k / 64, 14.0f / 16, Color(0xFFFFFF));
 	snprintf(b, sizeof b, "%d / %d", int(hp + 0.5f), int(mx));
-	g.text(160, 28, 0.38f, Color(0xFFFFFF), b, ALIGN_CENTER);
-	// Segen-Plätze
-	static const char *SL[4] = {"Angriff", "Wirbel", "Splitter", "Ausweichen"};
+	g.text(160, 28, 0.4f, Color(0xFFFFFF), b, ALIGN_CENTER);
+	// Segen in den Medaillons
 	for (int i = 0; i < SL_COUNT; i++) {
-		float x = 8 + i * 77, y = 52;
+		float cx = 46 + i * 76, cy = 80;
 		int god = AR.mods.slotGod[i];
-		ui::panel(g, x, y, 72, 50, Color(god >= 0 ? 0x1A1E44 : 0x101228, 0.9f), god >= 0 ? Color(godColor(god), 0.8f) : Color(0x3A3A5A));
-		if (god >= 0) g.image(A.ui[UI_SIGIL_SEREN + god], x + 18, y + 25, 0.34f, 0.34f, 0, Color(0xFFFFFF));
-		g.text(god >= 0 ? x + 48 : x + 36, y + 6, 0.3f, Color(0xB8B4D8), SL[i], ALIGN_CENTER, 44);
-		if (god >= 0) {
-			snprintf(b, sizeof b, "%.1fx", AR.mods.slotPow[i]);
-			g.text(x + 50, y + 28, 0.34f, Color(godColor(god)), b, ALIGN_CENTER);
+		if (god < 0) continue;
+		g.image(A.ui[UI_P_GLOW], cx, cy, 1.1f, 1.1f, 0, Color(godColor(god), 0.35f), 1);
+		g.image(A.ui[UI_SIGIL_SEREN + god], cx, cy - 2, 0.56f, 0.56f, 0, Color(0xFFFFFF));
+		snprintf(b, sizeof b, "%.1f", AR.mods.slotPow[i]);
+		g.text(cx, cy + 14, 0.3f, Color(0xFFF0C8), b, ALIGN_CENTER);
+	}
+	int pi = 0;
+	for (int gd = CH_IGNARA; gd < CH_COUNT; gd++)
+		if (AR.mods.passive[gd]) { g.image(A.ui[UI_SIGIL_SEREN + gd], 70 + pi * 34, 134, 0.24f, 0.24f, 0, Color(0xFFFFFF)); pi++; }
+	// Ladungen
+	const Arena::Hero &h = AR.hero;
+	struct Ch { int have, max; float part; Color c; } ch[3] = {
+		{h.dashCharges, AR.mods.dashCharges, h.dashRecharge / AR.mods.dashRecharge, Color(0xC8A0FF)},
+		{h.castCharges, AR.mods.castCharges, h.castRecharge / 2.2f, Color(0x6AD8FF)},
+		{h.specialCd > 0 ? 0 : 1, 1, 1 - h.specialCd / AR.mods.specialCd, Color(0xFFE08A)},
+	};
+	for (int i = 0; i < 3; i++) {
+		float x = 8 + i * 102 + 92;
+		for (int p = ch[i].max - 1, q = 0; p >= 0; p--, q++) {
+			bool full = p < ch[i].have;
+			float px = x - q * 11;
+			g.circle(px, 163, 4.5f, Color(0x08060E));
+			if (full) g.circle(px, 163, 3.5f, ch[i].c);
+			else if (p == ch[i].have) g.circle(px, 163, 3.5f * clampf(ch[i].part, 0, 1), ch[i].c.alpha(0.6f));
 		}
 	}
-	float px = 10;
-	g.text(8, 108, 0.3f, Color(0x8A86B0), "Gaben:", ALIGN_LEFT);
-	px = 44;
-	for (int gd = CH_IGNARA; gd < CH_COUNT; gd++)
-		if (AR.mods.passive[gd]) { g.image(A.ui[UI_SIGIL_SEREN + gd], px, 114, 0.22f, 0.22f, 0, Color(0xFFFFFF)); px += 18; }
+	// Amboss + Hinweise
 	const char *an[5] = {"Weite Hiebe", "Abschluss", "Doppelwirbel", "Fächer", "Windklinge"};
 	bool ao[5] = {AR.mods.wide, AR.mods.finisher, AR.mods.doubleSpin, AR.mods.fanCast, AR.mods.bladeWave};
-	float ax = 8;
+	float ax = 10;
 	for (int i = 0; i < 5; i++)
-		if (ao[i]) { g.text(ax, 126, 0.28f, Color(0xE8C060), an[i], ALIGN_LEFT); ax += g.textWidth(an[i], 0.28f) + 8; }
-	// Ladungen
-	snprintf(b, sizeof b, "Ausweichen %d/%d   Splitter %d/%d   Wirbel %s", AR.hero.dashCharges, AR.mods.dashCharges, AR.hero.castCharges, AR.mods.castCharges,
-	         AR.hero.specialCd > 0 ? "lädt" : "bereit");
-	g.text(160, 142, 0.32f, Color(0xC8C4E8), b, ALIGN_CENTER);
-	if (R.mod) g.text(160, 160, 0.34f, Color(0xFF9A7A), MOD_NAME[R.mod], ALIGN_CENTER);
-	const char *hint = R.state == RS_CLEARED ? (AR.pickup.active ? "Raum geschafft! Hol dir die Belohnung." : "") : R.state == RS_DOORS ? "Wähle eine Tür: Lauf hinein." : "";
-	g.text(160, 178, 0.36f, Color(0xFFF0C8), hint, ALIGN_CENTER);
-	drawButton(g, 90, 250, 206, UI_BTN_SMALL, "", false, 0);
-	g.text(282, 211, 0.32f, R.quitArm > 0 ? Color(0xFF7A6A) : Color(0xB8B4D8), R.quitArm > 0 ? "Sicher?" : "Aufgeben", ALIGN_CENTER);
-	g.text(8, 212, 0.28f, Color(0x6A6490), "A Kombo · B Ausweichen · X Wirbel · Y Splitter", ALIGN_LEFT);
+		if (ao[i]) { g.text(ax, 180, 0.3f, Color(0xE8C060), an[i], ALIGN_LEFT); ax += g.textWidth(an[i], 0.3f) + 8; }
+	const char *hint = R.state == RS_CLEARED ? (AR.pickup.active ? "Raum geschafft! Hol dir die Belohnung." : "") : R.state == RS_DOORS ? "Wähle eine Tür und lauf hinein." : R.mod ? MOD_NAME[R.mod] : "";
+	g.text(160, 194, 0.38f, R.mod && R.state == RS_FIGHT ? Color(0xFF9A7A) : Color(0xFFF0C8), hint, ALIGN_CENTER);
+	drawButton(g, 90, 250, 208, UI_BTN_SMALL, "", false, 0);
+	g.text(282, 213, 0.32f, R.quitArm > 0 ? Color(0xFF7A6A) : Color(0xD8D4F0), R.quitArm > 0 ? "Sicher?" : "Aufgeben", ALIGN_CENTER);
+	g.text(10, 216, 0.28f, Color(0x8A84B0), "A Kombo · B Schatten · X Wirbel · Y Splitter", ALIGN_LEFT);
 }
 
 void runDraw(Gfx &g) {
@@ -567,13 +581,13 @@ void runDraw(Gfx &g) {
 		AR.draw(g);
 		// Kopfzeile oben: Leben
 		float k = clampf(AR.hero.hp / AR.mods.maxHp, 0, 1);
-		g.rrect(8, 8, 104, 10, 4, Color(0x000000, 0.6f), Color(0x000000, 0.6f), -2);
-		if (k > 0) g.rrect(9, 9, 102 * k, 8, 3, Color(0xFF6A7A), Color(0xC8283A), -2);
+		g.imageAt(A.ui[UI_TOP_HP], 4, 4, 1, 1, Color(0xFFFFFF), 0, -2);
+		if (k > 0) g.imageAt(A.ui[UI_HP_FILL], 9, 9, 120 * k / 64, 10.0f / 16, Color(0xFFFFFF), 0, -2);
 		for (const Enemy &e : AR.enemies)
 			if (e.alive && (e.type == EN_BOSS || e.type == EN_QUEEN)) {
-				g.text(200, 204, 0.42f, Color(0xFF9A7A), R.room >= LAST_ROOM ? "Kristallkönigin" : "Wächter der Tiefe", ALIGN_CENTER, 0, true, -2);
-				g.rrect(60, 222, 280, 10, 4, Color(0x000000, 0.7f), Color(0x000000, 0.7f), -2);
-				g.rrect(61, 223, 278 * clampf(e.hp / e.maxHp, 0, 1), 8, 3, Color(0xFF5A3A), Color(0xA0201A), -2);
+				g.text(200, 198, 0.42f, Color(0xFFD8B0), R.room >= LAST_ROOM ? "Kristallkönigin" : "Wächter der Tiefe", ALIGN_CENTER, 0, true, -2);
+				g.imageAt(A.ui[UI_BOSS_BAR], 50, 214, 1, 1, Color(0xFFFFFF), 0, -2);
+				g.imageAt(A.ui[UI_HP_FILL], 56, 220, 288 * clampf(e.hp / e.maxHp, 0, 1) / 64, 12.0f / 16, Color(0xFFB080), 0, -2);
 			}
 		if (R.bannerT < 2.2f && R.state != RS_DEAD && R.state != RS_WIN && R.roomType != RT_BOSS) {
 			float a = R.bannerT < 0.3f ? R.bannerT / 0.3f : R.bannerT > 1.7f ? (2.2f - R.bannerT) / 0.5f : 1;
@@ -609,11 +623,11 @@ void runDraw(Gfx &g) {
 		ui::drawToasts(g, 4);
 		return;
 	}
-	g.imageAt(A.bg[BG_BOTTOM], 0, 0);
+	if (R.state == RS_DEAD || R.state == RS_WIN || (R.state == RS_CHOICE && (R.choice == CK_SHOP || R.choice == CK_EVENT))) g.imageAt(A.bg2[BG2_MENU], 0, 0);
 	if (R.state == RS_DEAD || R.state == RS_WIN) {
 		g.text(160, 16, 0.6f, R.state == RS_WIN ? Color(0xFFE08A) : Color(0xFF9A9A), R.state == RS_WIN ? "SIEG" : "LAUF BEENDET", ALIGN_CENTER);
 		char b[64];
-		ui::panel(g, 20, 48, 280, 110, Color(0x0E1026, 0.9f), Color(0x4A4A80));
+
 		snprintf(b, sizeof b, "Räume geschafft: %d", R.room - (R.state == RS_DEAD ? 1 : 0)); g.text(36, 58, 0.42f, Color(0xE8E4F8), b, ALIGN_LEFT);
 		snprintf(b, sizeof b, "Besiegte Gegner: %d", AR.totalKills); g.text(36, 80, 0.42f, Color(0xE8E4F8), b, ALIGN_LEFT);
 		snprintf(b, sizeof b, "Münzen: %d", R.coins); g.text(36, 102, 0.42f, Color(0xFFD25A), b, ALIGN_LEFT);
@@ -626,8 +640,9 @@ void runDraw(Gfx &g) {
 	}
 	if (R.state == RS_CHOICE) {
 		if (R.choice == CK_BOON || R.choice == CK_ANVIL) {
-			g.text(160, 8, 0.5f, Color(0xE8C060), R.choice == CK_BOON ? "WÄHLE EINEN SEGEN" : "AMBOSS: WÄHLE EINE VERBESSERUNG", ALIGN_CENTER);
-			for (int i = 0; i < R.nOffers; i++) drawCard(g, 80 + i, 8 + i * 104, 30, R.offers[i], R.sel == i);
+			g.imageAt(A.bg2[BG2_CARDS], 0, 0);
+			g.text(160, 5, 0.46f, Color(0xE8C060), R.choice == CK_BOON ? "WÄHLE EINEN SEGEN" : "AMBOSS: VERBESSERUNG", ALIGN_CENTER);
+			for (int i = 0; i < R.nOffers; i++) drawCard(g, 80 + i, 8 + i * 104, 28, R.offers[i], R.sel == i);
 			if (R.sel < R.nOffers) drawOfferInfo(g, R.offers[R.sel]);
 			g.text(160, 218, 0.36f, Color(0xB8B4D8), "Antippen = ansehen, nochmal = nehmen  ·  A: nehmen", ALIGN_CENTER);
 		} else if (R.choice == CK_SHOP) {

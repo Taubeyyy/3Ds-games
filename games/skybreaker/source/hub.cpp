@@ -98,7 +98,7 @@ void hubDraw(Gfx &g) {
 		ui::drawToasts(g, 186);
 		return;
 	}
-	g.imageAt(A.bg[BG_BOTTOM], 0, 0);
+	g.imageAt(A.bg2[BG2_MENU], 0, 0);
 	char b[96];
 	if (g_overlay == ST_RACK) {
 		g.text(160, 6, 0.5f, Color(0xE8C060), "WAFFENSTÄNDER", ALIGN_CENTER);

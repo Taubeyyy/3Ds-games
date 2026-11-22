@@ -1242,8 +1242,8 @@ void Arena::draw(Gfx &g) {
 	Vec3 sh;
 	if (g_shake > 0) sh = Vec3(g_r.range(-1, 1), g_r.range(-1, 1), g_r.range(-1, 1)) * (g_shake * 0.16f);
 	cam.target = g_camFocus + Vec3(0, 0.6f, 0) + sh;
-	cam.eye = g_camFocus + Vec3(0, 6.9f, 6.3f) + sh;
-	cam.fov = 42 - 2.5f * g_kick;
+	cam.eye = g_camFocus + Vec3(0, 5.9f, 5.4f) + sh;
+	cam.fov = 41 - 2.5f * g_kick;
 	cam.focus = (cam.eye - cam.target).len();
 	cam.zfar = 300;
 	Scene3D sc;
@@ -1275,6 +1275,8 @@ void Arena::draw(Gfx &g) {
 	}
 	Light3D star; star.point = true; star.pos = h.pos + Vec3(0.1f, 1.25f, 0.2f); star.color = Color(0x8AF0FF); star.intensity = 0.6f; star.range = 1.6f;
 	sc.lights[sc.nLights++] = star;
+	Light3D hk; hk.point = true; hk.pos = h.pos + Vec3(0.7f, 2.6f, 1.8f); hk.color = Color(0xFFEEDD); hk.intensity = 1.15f; hk.range = 4.6f;
+	sc.lights[sc.nLights++] = hk;                                     // Führungslicht: Heldin hebt sich ab
 	for (int k = 0; k < nObst && sc.nLights < 6; k++)
 		if (obst[k].fire) { Light3D f; f.point = true; f.pos = obst[k].pos + Vec3(0, 1.35f, 0); f.color = Color(0xFF9A4A); f.intensity = 1.1f + 0.15f * sinf(t * 9 + k); f.range = 4.2f; sc.lights[sc.nLights++] = f; }
 	for (const HProj &p : g_hp)

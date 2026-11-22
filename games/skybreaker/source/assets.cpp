@@ -3,6 +3,7 @@
 #include "game.hpp"
 #include "ui_t3x.h"
 #include "bg_t3x.h"
+#include "bg2_t3x.h"
 #include "tex_floor_d_t3x.h"
 #include "tex_wall_d_t3x.h"
 #include "tex_floor_c_t3x.h"
@@ -89,12 +90,15 @@ void loadAssets() {
 	for (int i = 0; i < UI_COUNT; i++) A.ui[i] = A.uiSheet.get(i);
 	A.bgSheet.loadMem(FORGE_SHEET(bg));
 	for (int i = 0; i < BG_COUNT; i++) A.bg[i] = A.bgSheet.get(i);
+	A.bg2Sheet.loadMem(FORGE_SHEET(bg2));
+	for (int i = 0; i < BG2_COUNT; i++) A.bg2[i] = A.bg2Sheet.get(i);
 	for (const PartSrc &p : PART_SRC) {
 		CharModel &c = CM[p.ch];
 		c.part[p.kind].loadMem(p.data, p.size);
 		c.has[p.kind] = true;
 		c.pivot[p.kind] = (p.kind == PK_FX || p.kind == PK_PET) ? centroid(c.part[p.kind]) : topPivot(c.part[p.kind]);
 	}
+	for (const PartSrc &h : HULL_SRC) { CM[h.ch].hull[h.kind].loadMem(h.data, h.size); CM[h.ch].hasHull[h.kind] = true; }
 	for (const PartSrc &w : WORLD_SRC) A.world[w.ch].loadMem(w.data, w.size);
 	A.slash = slashMesh();
 	A.texFloor[0].loadMem(FORGE_SHEET(tex_floor_d));
@@ -154,6 +158,16 @@ Mat4 serenWeaponXf(const Mat4 &xf, const Pose &p) {
 	return arm * Mat4::translate(SEREN_HAND) * Mat4::rotZ(-0.12f * (1 - p.weaponBlend)) * Mat4::rotX(rx) * Mat4::rotY(p.weaponRoll);
 }
 
+static void drawPart(const CharModel &m, int pk, const Mat4 &xf, const Material &mat) {
+	gfx3d::draw(m.part[pk], xf, mat);
+	if (m.hasHull[pk]) {
+		static Material outline;
+		outline.lit = false;
+		outline.color = Color(0xFFFFFF);
+		gfx3d::draw(m.hull[pk], xf, outline);
+	}
+}
+
 void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose, float flash, bool weapon) {
 	CharModel &m = CM[ch];
 	Pose rest;
@@ -169,12 +183,12 @@ void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose, float flash, bo
 	Mat4 base = P.sink != 0 ? Mat4::translate(Vec3(0, -P.sink, 0)) * xf : xf;
 	Mat4 bx = base * Mat4::rotY(P.bodyTwist);
 	Mat4 bodyXf = bx * Mat4::scale(Vec3(1, breathe, 1));
-	gfx3d::draw(m.part[PK_BODY], bodyXf, body);
+	drawPart(m, PK_BODY, bodyXf, body);
 	if (m.has[PK_LEG_L]) {                                        // Beine schwingen gegengleich um die Hüfte
-		gfx3d::draw(m.part[PK_LEG_L], base * around(HIP_L, Mat4::rotX(P.legSwing)), body);
-		gfx3d::draw(m.part[PK_LEG_R], base * around(HIP_R, Mat4::rotX(-P.legSwing)), body);
+		drawPart(m, PK_LEG_L, base * around(HIP_L, Mat4::rotX(P.legSwing)), body);
+		drawPart(m, PK_LEG_R, base * around(HIP_R, Mat4::rotX(-P.legSwing)), body);
 	}
-	if (m.has[PK_ARM_L]) gfx3d::draw(m.part[PK_ARM_L], bx * around(SHOULDER_L, Mat4::rotX(-P.armSwingL) * Mat4::rotZ(-0.05f)), body);
+	if (m.has[PK_ARM_L]) drawPart(m, PK_ARM_L, bx * around(SHOULDER_L, Mat4::rotX(-P.armSwingL) * Mat4::rotZ(-0.05f)), body);
 	// schwingende Teile
 	static const int SW[3] = {PK_HAIR, PK_SCARF, PK_CAPE};
 	for (int k = 0; k < 3; k++) {
@@ -187,7 +201,7 @@ void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose, float flash, bo
 	}
 	if (m.has[PK_ARM]) {
 		Mat4 arm = bx * around(SEREN_SHOULDER, Mat4::rotY(P.armYaw) * Mat4::rotX(-P.armLift));
-		gfx3d::draw(m.part[PK_ARM], arm, body);
+		drawPart(m, PK_ARM, arm, body);
 	}
 	if (m.has[PK_GLOW]) gfx3d::draw(m.part[PK_GLOW], bodyXf, glow);
 	if (m.has[PK_FX]) {

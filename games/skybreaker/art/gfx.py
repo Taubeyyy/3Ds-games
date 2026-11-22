@@ -459,6 +459,10 @@ def build():
     ui.append(save(panel(96, 120, (30, 26, 56), (12, 10, 26), (120, 110, 160), ornament=False, r=10), "card_off"))
     from textures import vignette
     ui.append(save(vignette(), "vignette"))
+    import uiart
+    ui_extra, bg2 = uiart.build(save)
+    ui += ui_extra
+    open(os.path.join(GFX, "bg2.t3s"), "w").write("--atlas -f rgba8 -z auto\n" + "\n".join(bg2) + "\n")
     open(os.path.join(GFX, "ui.t3s"), "w").write("--atlas -f rgba8 -z auto\n" + "\n".join(ui) + "\n")
     s, crack = sky()
     bg = [save(s, "sky"), save(crack, "crack"), save(bottom_bg(), "bottom"), save(pantheon_bg(), "pantheon")]
@@ -469,7 +473,7 @@ def build():
         f.write("// generiert von art/gfx.py\n#pragma once\nenum UiImg {\n")
         for i, n in enumerate(names):
             f.write("\tUI_%s = %d,\n" % (n, i))
-        f.write("\tUI_COUNT = %d\n};\nenum BgImg { BG_SKY, BG_CRACK, BG_BOTTOM, BG_PANTHEON, BG_COUNT };\n" % len(names))
+        f.write("\tUI_COUNT = %d\n};\nenum BgImg { BG_SKY, BG_CRACK, BG_BOTTOM, BG_PANTHEON, BG_COUNT };\nenum Bg2Img { BG2_RUN, BG2_CARDS, BG2_MENU, BG2_COUNT };\n" % len(names))
 
 
 if __name__ == "__main__":

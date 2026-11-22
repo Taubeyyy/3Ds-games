@@ -36,7 +36,7 @@ void trainingUpdate(float dt, const Input &in) {
 
 void trainingDraw(Gfx &g) {
 	if (g.screen == Screen::Top) { AR.draw(g); ui::drawToasts(g, 4); return; }
-	g.imageAt(A.bg[BG_BOTTOM], 0, 0);
+	g.imageAt(A.bg2[BG2_MENU], 0, 0);
 	g.text(160, 6, 0.46f, Color(0xE8C060), "GÖTTER-TRAINING", ALIGN_CENTER);
 	drawButton(g, 71, 6, 4, UI_BTN_SMALL, "", false, 0);
 	g.text(38, 9, 0.38f, Color(0xFFFFFF), "< Zurück", ALIGN_CENTER);

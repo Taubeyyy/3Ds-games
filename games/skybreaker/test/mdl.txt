@@ -1,0 +1,7 @@
+70 shot m_title
+80 tap 160 120
+120 tap 160 80
+200 shot m_hub
+210 stick 0.5 -0.4 30
+250 shot m_hub2
+260 quit

@@ -345,6 +345,8 @@ def hubdecor(R=4.55):
 
 
 def build(out):
+    import lowpoly
+    lowpoly.QUALITY = 1.5
     parts = {}
     for name, fn in (("shard", splitterling), ("crawler", krabbler), ("wisp", irrlicht), ("bomber", gluetkaefer), ("brute", waechter),
                      ("spider", kristallspinne), ("archer", schuetze), ("geode", geode), ("queen", koenigin)):
@@ -367,7 +369,8 @@ def build(out):
     parts["r_hubdecor"] = hubdecor()
     tris = 0
     for k, m in parts.items():
-        nv, nt = m.save(os.path.join(out, "%s.fmesh" % k))
+        smooth = not (k.endswith("glow") or k in ("r_portal", "r_rack", "r_chest", "r_anvil", "r_coins", "r_hubdecor"))
+        nv, nt = m.save(os.path.join(out, "%s.fmesh" % k), smooth=smooth)
         tris += nt
     print("Gegner/Requisiten:", len(parts), "Modelle,", tris, "Dreiecke")
     return list(parts.keys())

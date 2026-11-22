@@ -1,0 +1,4 @@
+--atlas -f rgba8 -z auto
+png/bot_run.png
+png/bot_cards.png
+png/bot_menu.png

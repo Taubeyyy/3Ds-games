@@ -1,0 +1,19 @@
+80 tap 160 120
+120 tap 160 80
+200 shot u_hub
+205 stick 0 -1 140
+350 key A
+370 key A
+700 shot u00700
+900 shot u00900
+1100 shot u01100
+1300 shot u01300
+1500 shot u01500
+1700 shot u01700
+1900 shot u01900
+2100 shot u02100
+2300 shot u02300
+2500 shot u02500
+2700 shot u02700
+2900 shot u02900
+3000 quit
