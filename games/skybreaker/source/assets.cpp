@@ -141,7 +141,8 @@ static Mat4 around(const Vec3 &p, const Mat4 &r) { return Mat4::translate(p) * r
 Mat4 serenWeaponXf(const Mat4 &xf, const Pose &p) {
 	Mat4 body = (p.sink != 0 ? Mat4::translate(Vec3(0, -p.sink, 0)) * xf : xf) * Mat4::rotY(p.bodyTwist);
 	Mat4 arm = body * around(SEREN_SHOULDER, Mat4::rotY(p.armYaw) * Mat4::rotX(-p.armLift));
-	float rx = 0.78f * PI + (PI - 0.78f * PI) * p.weaponBlend;
+	float rest = p.weapon == 2 ? 0.12f : 0.78f * PI;                // Sense wird aufrecht gehalten
+	float rx = rest + (PI - rest) * p.weaponBlend;
 	return arm * Mat4::translate(SEREN_HAND) * Mat4::rotZ(-0.12f * (1 - p.weaponBlend)) * Mat4::rotX(rx) * Mat4::rotY(p.weaponRoll);
 }
 
@@ -192,8 +193,19 @@ void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose, float flash, bo
 		wm.specular = 0.8f;
 		wm.shininess = 40;
 		if (flash > 0) wm.emission = body.emission;
-		if (m.has[PK_WEAPON]) gfx3d::draw(m.part[PK_WEAPON], wx, wm);
-		if (m.has[PK_WEAPON_GLOW]) gfx3d::draw(m.part[PK_WEAPON_GLOW], wx, glow);
+		if (ch == CH_SEREN && P.weapon == 1) {                        // Schattendolche: in jeder Hand einer
+			gfx3d::draw(A.world[WM_R_DAGGER], wx, wm);
+			gfx3d::draw(A.world[WM_R_DAGGER_GLOW], wx, glow);
+			Mat4 al = bx * around(SHOULDER_L, Mat4::rotX(-P.armSwingL) * Mat4::rotZ(-0.05f)) * Mat4::translate(Vec3(-0.275f, 0.81f, 0.11f)) * Mat4::rotZ(0.12f) * Mat4::rotX(0.78f * PI);
+			gfx3d::draw(A.world[WM_R_DAGGER], al, wm);
+			gfx3d::draw(A.world[WM_R_DAGGER_GLOW], al, glow);
+		} else if (ch == CH_SEREN && P.weapon == 2) {
+			gfx3d::draw(A.world[WM_R_SCYTHE], wx, wm);
+			gfx3d::draw(A.world[WM_R_SCYTHE_GLOW], wx, glow);
+		} else {
+			if (m.has[PK_WEAPON]) gfx3d::draw(m.part[PK_WEAPON], wx, wm);
+			if (m.has[PK_WEAPON_GLOW]) gfx3d::draw(m.part[PK_WEAPON_GLOW], wx, glow);
+		}
 	}
 	Mat4 orb = xf * Mat4::rotY(t * 0.8f);
 	if (m.has[PK_ORBIT]) gfx3d::draw(m.part[PK_ORBIT], orb, body);

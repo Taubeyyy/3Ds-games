@@ -15,9 +15,14 @@ static const AnimKey SWING[3][5] = {
 	{{0, -0.6f, 1.2f, 1, -0.3f}, {0.2f, -1.15f, 1.3f, 1, -0.35f}, {0.48f, 1.55f, 1.35f, 1, 0.45f}, {0.75f, 1.2f, 1.1f, 1, 0.3f}, {1, 0.2f, 0.3f, 0.3f, 0}},
 	{{0, 0.2f, 1.0f, 1, 0}, {0.32f, 0.15f, 2.95f, 1, 0.1f}, {0.55f, 0.1f, 0.75f, 1, -0.05f}, {0.8f, 0.1f, 0.8f, 1, 0}, {1, 0.0f, 0.3f, 0.3f, 0}},
 };
-static const float SWING_DUR[3] = {0.3f, 0.3f, 0.46f};
-static const float SWING_HIT[3] = {0.36f, 0.34f, 0.52f};
-static const float SWING_DMG[3] = {20, 22, 42};
+// Waffen: Schattenklinge (3 Hiebe), Schattendolche (4 schnelle Stiche), Mondsense (2 weite, schwere Schwünge)
+struct WeaponDef { int hits; float dur[4], hitAt[4], dmg[4], range[4], half[4], slash[4]; int keys[4]; bool heavy[4], leftThrust[4]; };
+static const WeaponDef WEAPONS[3] = {
+	{3, {0.3f, 0.3f, 0.46f}, {0.36f, 0.34f, 0.52f}, {20, 22, 42}, {1.75f, 1.75f, 2.0f}, {1.35f, 1.35f, 0.75f}, {1.75f, 1.75f, 1.9f}, {0, 1, 2}, {false, false, true}, {}},
+	{4, {0.18f, 0.18f, 0.18f, 0.32f}, {0.35f, 0.4f, 0.35f, 0.5f}, {11, 11, 12, 28}, {1.45f, 1.45f, 1.45f, 1.6f}, {1.1f, 1.1f, 1.1f, 0.8f}, {1.35f, 1.2f, 1.35f, 1.5f}, {0, 0, 1, 2}, {false, false, false, true}, {false, true, false, true}},
+	{2, {0.44f, 0.56f}, {0.42f, 0.45f}, {34, 54}, {2.55f, 2.7f}, {1.9f, 1.9f}, {2.6f, 2.8f}, {0, 1}, {true, true}, {}},
+};
+#define SWING_DUR(c) (WEAPONS[AR.mods.weapon].dur[c])
 
 struct EDef { float hp, speed, r, dmg, scale; int body, glow; };
 static const EDef EDEFS[EN_COUNT] = {
@@ -151,7 +156,14 @@ void Arena::newRoom(int seed, bool keepHero) {
 	float a0 = r.range(0.6f, 1.0f);
 	obst[nObst++] = {WM_BRAZIER, Vec3(sinf(PI + a0) * 4.0f, 0.07f, cosf(PI + a0) * 4.0f), 0.36f, 0, 1, true};
 	obst[nObst++] = {WM_BRAZIER, Vec3(sinf(PI - a0) * 4.0f, 0.07f, cosf(PI - a0) * 4.0f), 0.36f, 0, 1, true};
-	if (!training) {
+	if (hub) {
+		nObst = 0;
+		obst[nObst++] = {WM_BRAZIER, Vec3(-1.5f, 0.07f, -3.9f), 0.36f, 0, 1, true};
+		obst[nObst++] = {WM_BRAZIER, Vec3(1.5f, 0.07f, -3.9f), 0.36f, 0, 1, true};
+		obst[nObst++] = {WM_R_ALTAR, Vec3(-2.7f, 0.07f, -2.5f), 0.62f, 0.5f, 1, false};
+		obst[nObst++] = {WM_R_RACK, Vec3(2.9f, 0.07f, -2.8f), 0.7f, -0.75f, 1, false};
+	}
+	if (!training && !hub) {
 		int n = r.irange(1, 3);
 		for (int i = 0; i < n && nObst < 10; i++) {
 			float a = r.range(0, 2 * PI), d = r.range(2.0f, 3.5f);
@@ -378,16 +390,17 @@ static void faceAim(Vec2 stick) {
 
 static void startAttack(Vec2 stick) {
 	Arena::Hero &h = AR.hero;
-	int c = h.act == ACT_ATTACK || h.comboWindow > 0 ? (h.combo + 1) % 3 : 0;
+	int c = h.act == ACT_ATTACK || h.comboWindow > 0 ? (h.combo + 1) % WEAPONS[AR.mods.weapon].hits : 0;
 	if (h.act == ACT_ATTACK && h.actT < h.actDur * 0.55f) { h.queued = true; return; }
 	faceAim(stick);
 	h.act = ACT_ATTACK;
 	h.combo = c;
 	h.actT = 0;
-	h.actDur = SWING_DUR[c] / AR.mods.atkSpeed / (AR.mods.passive[CH_THALOR] ? 1.15f : 1);
+	h.actDur = SWING_DUR(c) / AR.mods.atkSpeed / (AR.mods.passive[CH_THALOR] ? 1.15f : 1);
 	h.hitDone = false;
 	h.queued = false;
-	sfx(c == 2 ? A.swing3 : A.swing, g_r.range(0.95f, 1.1f), 0.7f);
+	const WeaponDef &wd = WEAPONS[AR.mods.weapon];
+	sfx(wd.heavy[c] ? A.swing3 : A.swing, g_r.range(0.95f, 1.1f) * (AR.mods.weapon == 1 ? 1.25f : AR.mods.weapon == 2 ? 0.8f : 1), 0.7f);
 }
 
 static void hitArc(float range, float half, float dmg, int god, float pow, int flags, Color c) {
@@ -763,22 +776,29 @@ void Arena::update(float dt, const Input &in) {
 		switch (h.act) {
 		case ACT_ATTACK: {
 			int c = h.combo;
-			poseFromKeys(SWING[c], 5, x, h.pose);
+			const WeaponDef &wd = WEAPONS[mods.weapon];
+			bool last = c == wd.hits - 1;
+			poseFromKeys(SWING[wd.keys[c]], 5, x, h.pose);
+			if (wd.leftThrust[c]) h.pose.armSwingL = 1.7f * sinf(x * PI);
 			moveK = 0.25f;
-			if (x < 0.45f) h.pos += fwd(h.yaw) * ((c == 2 ? 2.4f : 1.6f) * dt);
-			if (!h.hitDone && x >= SWING_HIT[c]) {
+			if (x < 0.45f) h.pos += fwd(h.yaw) * ((wd.heavy[c] ? 2.4f : 1.6f) * dt);
+			if (!h.hitDone && x >= wd.hitAt[c]) {
 				h.hitDone = true;
-				float rng = (c == 2 ? 2.0f : 1.75f) * (mods.wide ? 1.3f : 1);
+				float rng = wd.range[c] * (mods.wide ? 1.3f : 1);
 				Mat4 base = Mat4::translate(h.pos + Vec3(0, 1.0f, 0)) * Mat4::rotY(h.yaw);
-				float ss = rng / 1.75f * 1.75f;
-				if (c == 2) spawnSlash(base * Mat4::translate(Vec3(0, 0.1f, 0.15f)) * Mat4::rotZ(PI / 2) * Mat4::scale(Vec3(ss * 1.08f, 1, ss * 1.08f)), 0.2f, ac);
-				else spawnSlash(base * Mat4::rotZ(c ? -0.18f : 0.18f) * Mat4::scale(Vec3(c ? -ss : ss, 1, ss)), 0.17f, ac);
-				float dm = SWING_DMG[c] * (c == 2 && mods.finisher ? 1.6f : 1);
-				hitArc(rng, c == 2 ? 0.75f : 1.35f, dm, ag, ap, c == 2 ? HF_HEAVY : 0, ac);
-				if (c == 2 && mods.finisher) { blast(h.pos + fwd(h.yaw) * 1.2f, 1.8f, 16, ag, false, true); }
+				float ss = wd.slash[c] * (mods.wide ? 1.3f : 1);
+				int key = wd.keys[c];
+				if (key == 2) spawnSlash(base * Mat4::translate(Vec3(0, 0.1f, 0.15f)) * Mat4::rotZ(PI / 2) * Mat4::scale(Vec3(ss, 1, ss)), 0.2f, ac);
+				else spawnSlash(base * Mat4::rotZ(key ? -0.18f : 0.18f) * Mat4::scale(Vec3(key ? -ss : ss, 1, ss)), wd.heavy[c] ? 0.22f : 0.15f, ac);
+				if (wd.leftThrust[c]) spawnSlash(base * Mat4::translate(Vec3(-0.2f, 0, 0.2f)) * Mat4::rotZ(0.6f) * Mat4::scale(Vec3(-1.0f, 1, 1.3f)), 0.12f, ac);
+				float dm = wd.dmg[c] * (last && mods.finisher ? 1.6f : 1);
+				hitArc(rng, wd.half[c], dm, ag, ap, wd.heavy[c] ? HF_HEAVY : 0, ac);
+				if (mods.weapon == 2 && c == 1)                          // Sense zieht Feinde heran
+					for (Enemy &e : enemies) if (e.alive && e.type != EN_BOSS && e.type != EN_QUEEN && flat(e.pos - h.pos).len() < rng + 0.5f) e.vel = e.vel + flat(h.pos - e.pos).norm() * 3;
+				if (last && mods.finisher) { blast(h.pos + fwd(h.yaw) * 1.2f, 1.8f, 16, ag, false, true); }
 				if (mods.bladeWave)
 					for (HProj &p : g_hp) if (p.life <= 0) { p = {h.pos + Vec3(0, 0.9f, 0) + fwd(h.yaw) * 0.6f, fwd(h.yaw) * 12, 0.38f, dm * 0.5f, 0.6f, HK_WAVE, ag, true, 0, 0}; break; }
-				if (c == 2) {
+				if (last) {
 					g_fx.emit(h.pos + fwd(h.yaw) * 1.3f + Vec3(0, 0.05f, 0), 12, UI_P_DUST, Color(0xD8E8FF), ac.alpha(0), 4, 0.5f, 0.12f, 0.05f, 6, Vec3(0, 1, 0), 1.2f);
 					if (S.shake) g_shake = fmaxf(g_shake, 0.18f);
 				}
@@ -1236,6 +1256,23 @@ void Arena::draw(Gfx &g) {
 			gfx3d::draw(A.world[WM_BRAZIER_FIRE], bm * Mat4::translate(Vec3(0, 1.1f, 0)) * Mat4::scale(Vec3(1, fl, 1)) * Mat4::translate(Vec3(0, -1.1f, 0)), fm);
 		}
 	}
+	if (hub) {                                                         // Zuflucht: Teppich, Regale, Banner, Tor, Altar, Waffen
+		gfx3d::draw(A.world[WM_R_HUBDECOR], Mat4::identity(), lit);
+		Mat4 gm = Mat4::translate(Vec3(0, 0.075f, -4.6f)) * Mat4::scale(Vec3(1.3f, 1.3f, 1.3f));
+		gfx3d::draw(A.world[WM_R_DOOR], gm, lit);
+		Material pm; pm.lit = false; pm.color = Color(0x8AE8FF, 0.7f + 0.15f * sinf(t * 1.3f));
+		gfx3d::draw(A.world[WM_R_PORTAL], gm, pm);
+		Material ag2; ag2.lit = false;
+		Mat4 am = Mat4::translate(Vec3(-2.7f, 0.07f + 0.06f * sinf(t * 1.5f), -2.5f));
+		gfx3d::draw(A.world[WM_R_ALTAR_GLOW], am * Mat4::translate(Vec3(0, 1.75f, 0)) * Mat4::rotY(t * 0.8f) * Mat4::translate(Vec3(0, -1.75f, 0)), ag2);
+		Mat4 rm = Mat4::translate(Vec3(2.9f, 0.07f, -2.8f)) * Mat4::rotY(-0.75f);
+		Material wm; wm.specular = 0.7f; wm.shininess = 30;
+		gfx3d::draw(CM[CH_SEREN].part[PK_WEAPON], rm * Mat4::translate(Vec3(-0.45f, 1.28f, 0.1f)) * Mat4::rotX(PI), wm);
+		gfx3d::draw(A.world[WM_R_DAGGER], rm * Mat4::translate(Vec3(-0.05f, 1.28f, 0.1f)) * Mat4::rotX(PI), wm);
+		gfx3d::draw(A.world[WM_R_DAGGER], rm * Mat4::translate(Vec3(0.05f, 1.28f, 0.1f)) * Mat4::rotX(PI), wm);
+		gfx3d::draw(A.world[WM_R_SCYTHE], rm * Mat4::translate(Vec3(0.45f, 0.55f, 0.1f)), wm);
+		gfx3d::draw(A.world[WM_R_SCYTHE_GLOW], rm * Mat4::translate(Vec3(0.45f, 0.55f, 0.1f)), ag2);
+	}
 	// Türen
 	for (const Door &d : doors) {
 		if (!d.active) continue;
@@ -1317,6 +1354,7 @@ void Arena::draw(Gfx &g) {
 		float lean = 0.16f * h.runK + (h.act == ACT_DASH ? 0.35f : 0) + (h.act == ACT_ATTACK || h.act == ACT_DSTRIKE ? 0.1f : 0);
 		float roll = sinf(h.runPhase) * 0.05f * h.runK;
 		Mat4 hx = Mat4::translate(h.pos + Vec3(0, bob, 0)) * Mat4::rotY(h.yaw) * Mat4::rotX(lean - fall * 1.3f) * Mat4::rotZ(roll);
+		h.pose.weapon = mods.weapon;
 		drawChar(CH_SEREN, hx, t, &h.pose, fmaxf(h.flash, h.armorT > 0 ? 0.25f : 0));
 	}
 	Material pg; pg.lit = false;

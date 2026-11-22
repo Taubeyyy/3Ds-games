@@ -1,0 +1,16 @@
+80 tap 160 120
+110 shot h_menu
+120 tap 160 80
+200 shot h_hub
+205 stick 0.62 -0.75 52
+262 shot h_rack
+265 key A
+290 shot h_rackui
+295 tap 112 60
+300 key B
+310 stick -1 0 70
+385 stick 0 -1 25
+420 shot h_gate
+430 key A
+450 shot h_gateui
+460 quit

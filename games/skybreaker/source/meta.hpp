@@ -23,6 +23,7 @@ extern const char *GOD_LINES[CH_COUNT][2];
 // ------------------------------------------------------------------ Profil + Sternenkarte
 struct Profile {
 	u32 splitter = 0, nodes = 1, runs = 0, wins = 0, bestRoom = 0, kills = 0;
+	u32 weapons = 1, weapon = 0;   // freigeschaltete Waffen (Bits), gewählte Waffe
 };
 extern Profile PROF;
 void loadProfile();
@@ -31,6 +32,13 @@ Mods baseMods();
 float baseLuck();
 int startCoins();
 bool startBoon();
+
+void hubEnter();
+void hubUpdate(float dt, const Input &in);
+void hubDraw(Gfx &g);
+extern const char *WEAPON_NAME[3];
+extern const char *WEAPON_DESC[3];
+extern const int WEAPON_COST[3];
 
 void treeEnter();
 void treeUpdate(float dt, const Input &in);

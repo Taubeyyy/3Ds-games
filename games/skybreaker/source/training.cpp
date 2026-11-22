@@ -14,7 +14,7 @@ void trainingEnter() {
 }
 
 void trainingUpdate(float dt, const Input &in) {
-	if (ui::clicked(71) || in.pressed(KEY_START)) { sfx(A.click, 0.8f); if (S.music) audio::musicVolume(0.75f); gotoScene(SC_TITLE); return; }
+	if (ui::clicked(71) || in.pressed(KEY_START)) { sfx(A.click, 0.8f); gotoScene(SC_HUB); return; }
 	if (ui::clicked(72)) { sfx(A.click); AR.resetStats(); }
 	if (ui::clicked(74) || in.pressed(KEY_SELECT)) {             // Segen eines Gottes zum Testen auf alle Fähigkeiten legen
 		g_testGod = g_testGod >= CH_SYLV ? -1 : (g_testGod < 0 ? CH_IGNARA : g_testGod + 1);
@@ -37,9 +37,9 @@ void trainingUpdate(float dt, const Input &in) {
 void trainingDraw(Gfx &g) {
 	if (g.screen == Screen::Top) { AR.draw(g); ui::drawToasts(g, 4); return; }
 	g.imageAt(A.bg[BG_BOTTOM], 0, 0);
-	g.text(160, 6, 0.46f, Color(0xE8C060), "TRAININGSPLATZ", ALIGN_CENTER);
+	g.text(160, 6, 0.46f, Color(0xE8C060), "GÖTTER-TRAINING", ALIGN_CENTER);
 	drawButton(g, 71, 6, 4, UI_BTN_SMALL, "", false, 0);
-	g.text(38, 9, 0.38f, Color(0xFFFFFF), "< Menü", ALIGN_CENTER);
+	g.text(38, 9, 0.38f, Color(0xFFFFFF), "< Zurück", ALIGN_CENTER);
 	ui::panel(g, 10, 32, 300, 70, Color(0x0E1026, 0.85f), Color(0x4A4A80));
 	char b[64];
 	snprintf(b, sizeof b, "%.0f", AR.dps());

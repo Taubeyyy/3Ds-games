@@ -1,0 +1,19 @@
+80 tap 160 120
+120 tap 160 80
+205 stick 0.62 -0.75 52
+265 key A
+290 tap 112 60
+295 key A
+300 key A
+305 key B
+310 stick 0 1 30
+345 stick 0.2 1 5
+360 key A
+366 key A
+372 key A
+378 key A
+376 shot w_dag1
+384 shot w_dag2
+400 key A
+420 tap 216 60
+600 quit

@@ -370,14 +370,14 @@ void runUpdate(float dt, const Input &inReal) {
 	R.bannerT += dt;
 	R.quitArm = fmaxf(0, R.quitArm - dt);
 	if (ui::clicked(90)) {
-		if (R.state == RS_DEAD || R.state == RS_WIN) { sfx(A.click); gotoScene(SC_TITLE); return; }
+		if (R.state == RS_DEAD || R.state == RS_WIN) { sfx(A.click); gotoScene(SC_HUB); return; }
 		if (R.quitArm > 0) { finishRun(false); return; }
 		R.quitArm = 2.5f;
 		sfx(A.click);
 	}
 	if (R.state == RS_DEAD || R.state == RS_WIN) {
 		if (ui::clicked(91) || in.pressed(KEY_A)) { sfx(A.chime); runEnter(); }
-		if (in.pressed(KEY_B)) gotoScene(SC_TITLE);
+		if (in.pressed(KEY_B)) gotoScene(SC_HUB);
 		AR.update(dt * 0.25f, Input());
 		return;
 	}
@@ -620,7 +620,7 @@ void runDraw(Gfx &g) {
 		g.text(160, 166, 0.34f, Color(0xB8B4D8), "Gib Splitter in der Sternenkarte aus!", ALIGN_CENTER);
 		drawButton(g, 91, 44, 184, UI_BTN_MAIN, "Neuer Lauf", false, 0);
 		drawButton(g, 90, 250, 4, UI_BTN_SMALL, "", false, 0);
-		g.text(282, 9, 0.34f, Color(0xFFFFFF), "Menü", ALIGN_CENTER);
+		g.text(282, 9, 0.34f, Color(0xFFFFFF), "Zuflucht", ALIGN_CENTER);
 		return;
 	}
 	if (R.state == RS_CHOICE) {

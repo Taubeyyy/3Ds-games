@@ -43,6 +43,7 @@ void saveProfile() { save::write("profil", &PROF, sizeof PROF, 1); }
 
 Mods baseMods() {
 	Mods m;
+	m.weapon = int(PROF.weapon);
 	for (int i = 0; i < NN; i++) {
 		if (!owned(i)) continue;
 		const Node &n = NODES[i];
@@ -113,7 +114,7 @@ void treeUpdate(float dt, const Input &in) {
 			sfx(A.chime, 1.2f);
 		} else sfx(A.error, 1, 0.5f);
 	}
-	if (ui::clicked(99) || in.pressed(KEY_B)) { sfx(A.click, 0.8f); gotoScene(SC_TITLE); }
+	if (ui::clicked(99) || in.pressed(KEY_B)) { sfx(A.click, 0.8f); gotoScene(SC_HUB); }
 }
 
 void treeDraw(Gfx &g) {
@@ -168,7 +169,7 @@ void treeDraw(Gfx &g) {
 	if (!on) g.image(A.ui[UI_ICON_GEM], 262, 214, 0.38f, 0.38f, 0, Color(0xFFFFFF));
 	g.text(on ? 278 : 286, 205, 0.4f, bc, b, ALIGN_CENTER);
 	drawButton(g, 99, 4, 4, UI_BTN_SMALL, "", false, 0);
-	g.text(36, 9, 0.38f, Color(0xFFFFFF), "< Menü", ALIGN_CENTER);
+	g.text(36, 9, 0.38f, Color(0xFFFFFF), "< Zurück", ALIGN_CENTER);
 	snprintf(b, sizeof b, "%u", unsigned(PROF.splitter));
 	g.image(A.ui[UI_ICON_GEM], 278, 18, 0.45f, 0.45f, 0, Color(0xFFFFFF));
 	g.text(294, 10, 0.45f, Color(0x8AF0FF), b, ALIGN_LEFT);

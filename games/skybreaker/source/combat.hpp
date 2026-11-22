@@ -19,6 +19,7 @@ struct Mods {
 	bool passive[CH_COUNT] = {};
 	// Amboss-Verbesserungen
 	bool wide = false, finisher = false, doubleSpin = false, fanCast = false, bladeWave = false;
+	int weapon = 0;
 };
 
 struct Enemy {
@@ -69,7 +70,7 @@ public:
 	Obstacle obst[10];
 	int nObst = 0;
 	float radius = 4.35f;
-	bool training = false;
+	bool training = false, hub = false;
 	int biome = 0;
 	// Ereignisse dieses Bildes (für die Lauf-Logik)
 	int kills = 0, doorEntered = -1;

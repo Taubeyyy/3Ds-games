@@ -245,6 +245,105 @@ def coins():
     return m
 
 
+def dagger():
+    BLADE, DARK, TRIM, GLOW = rgb(0x4A4660), rgb(0x1C1626), rgb(0x8A5AC8), rgb(0x9A6AFF)
+    w = blade(0.42, 0.06, 0.018, BLADE, edge=rgb(0x2A2638)).move(0, 0.08, 0)
+    w += box(0.12, 0.03, 0.04, DARK, top=0.7).move(0, 0.06, 0)
+    w += prism(0.016, 0.014, 0.09, 6, rgb(0x3A2E36)).move(0, -0.03, 0)
+    w += octa(0.02, 0.025, TRIM).move(0, -0.05, 0)
+    g = slab([(-0.008, 0.1), (0.008, 0.1), (0.0, 0.46)], 0.024, GLOW)
+    return w, g
+
+
+def scythe():
+    WOOD, DARK, BLADE, GLOW = rgb(0x2E2436), rgb(0x1C1626), rgb(0x5A5670), rgb(0x8AE8FF)
+    w = prism(0.022, 0.022, 1.7, 6, WOOD).move(0, -0.55, 0)
+    w += box(0.07, 0.08, 0.07, DARK).move(0, 1.1, 0)
+    pts = [(0.0, 0.0), (0.12, 0.06), (0.42, 0.04), (0.7, -0.08), (0.86, -0.26), (0.62, -0.12), (0.36, -0.06), (0.1, -0.06)]
+    w += slab(pts, 0.025, BLADE).move(0.02, 1.13, 0)
+    g = slab([(0.12, 0.0), (0.42, -0.02), (0.7, -0.12), (0.82, -0.24), (0.66, -0.1), (0.4, -0.05)], 0.03, GLOW).move(0.02, 1.13, 0)
+    g += octa(0.03, 0.05, GLOW).move(0, -0.6, 0)
+    return w, g
+
+
+def altar():
+    STONE, STONE2, GOLD = rgb(0x6A6474), rgb(0x4E4858), rgb(0xE8C060)
+    m = prism(0.6, 0.55, 0.2, 8, STONE2)
+    m += prism(0.3, 0.22, 0.9, 8, STONE).move(0, 0.2, 0)
+    m += lathe([(0.2, 1.1), (0.45, 1.15), (0.48, 1.22), (0.3, 1.25)], 8, STONE2, cap_top=True)
+    m += lathe([(0.49, 1.18), (0.49, 1.21)], 8, GOLD, cap_bottom=False, cap_top=False)
+    g = Mesh()
+    pts = []
+    for i in range(16):
+        a = PI / 2 + PI * i / 8
+        rr = 0.24 if i % 2 == 0 else 0.09
+        pts.append((math.cos(a) * rr, math.sin(a) * rr))
+    g += slab(pts, 0.05, rgb(0xFFE8A0)).move(0, 1.75, 0)
+    g += ring(0.5, 0.012, 20, rgb(0x8AF0FF)).rx(PI / 2).move(0, 1.75, 0)
+    for i in range(6):
+        a = 2 * PI * i / 6
+        g += octa(0.025, 0.04, rgb(0xFFFFFF)).move(math.cos(a) * 0.5, 1.75 + math.sin(a) * 0.5, 0)
+    return m.vary(0.05, 141), g
+
+
+def rack():
+    WOOD, WOOD2, IRON = rgb(0x5A3A26), rgb(0x3E2818), rgb(0x4A4458)
+    m = Mesh()
+    for sx in (-1, 1):
+        m += box(0.1, 1.5, 0.1, WOOD).move(sx * 0.75, 0, 0)
+        m += box(0.3, 0.06, 0.3, WOOD2).move(sx * 0.75, 0, 0)
+    for y in (0.5, 1.3):
+        m += box(1.6, 0.07, 0.08, WOOD2).move(0, y, 0)
+    for i, x in enumerate((-0.45, 0.0, 0.45)):
+        m += box(0.05, 0.12, 0.1, IRON).move(x, 1.24, 0.05)
+    return m.vary(0.06, 142)
+
+
+def hubdecor(R=5.25):
+    import random
+    rnd = random.Random(55)
+    m = Mesh()
+    RUG1, RUG2, GOLD = rgb(0x4A2A5A), rgb(0x2E1A3E), rgb(0xC8A050)
+    rug = Mesh()
+    for k in range(24):                                                  # runder Teppich
+        a0, a1 = 2 * PI * k / 24, 2 * PI * (k + 1) / 24
+        for ri, (r0, r1, c) in enumerate([(0.0, 1.4, RUG2), (1.4, 1.55, GOLD), (1.55, 2.4, RUG1), (2.4, 2.52, GOLD)]):
+            p = [(math.sin(a) * r, math.cos(a) * r) for a, r in ((a0, r0), (a1, r0), (a1, r1), (a0, r1))]
+            rug.quad((p[0][0], 0.09, p[0][1]), (p[3][0], 0.09, p[3][1]), (p[2][0], 0.09, p[2][1]), (p[1][0], 0.09, p[1][1]), shade(c, 1 + 0.06 * ((k + ri) % 2)))
+    m += rug
+    for k, am in enumerate((PI - 1.15, PI + 1.15)):                      # Bücherregale an der Wand
+        x, z = math.sin(am) * (R - 0.4), math.cos(am) * (R - 0.4)
+        sh = box(1.4, 2.0, 0.4, rgb(0x3E2818)).ry(am)
+        for row in range(4):
+            for b in range(8):
+                c = rnd.choice([rgb(0x8A3A3A), rgb(0x3A5A8A), rgb(0x4A7A4A), rgb(0x8A7A3A), rgb(0x6A3A7A)])
+                hb = rnd.uniform(0.28, 0.4)
+                sh += box(0.12, hb, 0.26, c).move(-0.55 + b * 0.157, 0.12 + row * 0.47, 0.06).ry(am)
+        m += sh.move(x, 0, z)
+    for am in (PI - 0.42, PI + 0.42, PI - 1.9, PI + 1.9):                # Banner
+        x, z = math.sin(am) * (R - 0.08), math.cos(am) * (R - 0.08)
+        ban = Mesh().quad((-0.35, 3.0, 0), (0.35, 3.0, 0), (0.35, 1.3, 0), (-0.35, 1.3, 0), rgb(0x3A1E5A))
+        ban.tri((-0.35, 1.3, 0), (0.35, 1.3, 0), (0.0, 1.0, 0), rgb(0x3A1E5A))
+        ban = double_sided(ban)
+        st = []
+        for i in range(8):
+            a = PI / 2 + PI * i / 4
+            rr = 0.16 if i % 2 == 0 else 0.06
+            st.append((math.cos(a) * rr, math.sin(a) * rr + 2.2))
+        ban += slab(st, 0.01, GOLD).move(0, 0, 0.01)
+        m += ban.ry(am + PI).move(x, 0, z)
+    for i in range(5):                                                   # Kisten und Fässer
+        am = PI + rnd.uniform(-2.3, 2.3)
+        if abs(am - PI) < 0.6:
+            continue
+        x, z = math.sin(am) * (R - 0.55), math.cos(am) * (R - 0.55)
+        if rnd.random() < 0.5:
+            m += box(0.5, 0.5, 0.5, rgb(0x6A4A2E)).ry(rnd.uniform(0, 1)).move(x, 0.07, z)
+        else:
+            m += lathe([(0.2, 0), (0.24, 0.3), (0.2, 0.6)], 8, rgb(0x5A3A24)).move(x, 0.07, z)
+    return m.vary(0.04, 143)
+
+
 def build(out):
     parts = {}
     for name, fn in (("shard", splitterling), ("crawler", krabbler), ("wisp", irrlicht), ("bomber", gluetkaefer), ("brute", waechter),
@@ -261,6 +360,11 @@ def build(out):
     parts["r_shrine"] = shrine()
     parts["r_gem"] = splitter_gem()
     parts["r_coins"] = coins()
+    parts["r_dagger"], parts["r_dagger_glow"] = dagger()
+    parts["r_scythe"], parts["r_scythe_glow"] = scythe()
+    parts["r_altar"], parts["r_altar_glow"] = altar()
+    parts["r_rack"] = rack()
+    parts["r_hubdecor"] = hubdecor()
     tris = 0
     for k, m in parts.items():
         nv, nt = m.save(os.path.join(out, "%s.fmesh" % k))

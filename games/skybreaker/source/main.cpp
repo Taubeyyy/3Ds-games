@@ -48,17 +48,15 @@ void titleUpdate(float dt, const Input &in) {
 		return;
 	}
 	// Menü: Steuerkreuz + A, oder Touch
-	if (in.pressed(KEY_DUP)) { g_focus = (g_focus + 3) % 4; sfx(A.select); }
-	if (in.pressed(KEY_DDOWN)) { g_focus = (g_focus + 1) % 4; sfx(A.select); }
+	if (in.pressed(KEY_DUP)) { g_focus = (g_focus + 1) % 2; sfx(A.select); }
+	if (in.pressed(KEY_DDOWN)) { g_focus = (g_focus + 1) % 2; sfx(A.select); }
 	int act = -1;
-	for (int i = 0; i < 4; i++) if (ui::clicked(10 + i)) { act = i; g_focus = i; }
+	for (int i = 0; i < 2; i++) if (ui::clicked(10 + i)) { act = i; g_focus = i; }
 	if (in.pressed(KEY_A)) act = g_focus;
 	if (in.pressed(KEY_B)) { g_phase = 0; sfx(A.click, 0.8f); }
 	switch (act) {
-	case 0: sfx(A.chime, 1.2f); gotoScene(SC_RUN); break;
-	case 1: sfx(A.click); gotoScene(SC_TREE); break;
-	case 2: sfx(A.click); gotoScene(SC_TRAINING); break;
-	case 3: sfx(A.click); gotoScene(SC_OPTIONS); break;
+	case 0: sfx(A.chime, 1.2f); gotoScene(SC_HUB); break;
+	case 1: sfx(A.click); gotoScene(SC_OPTIONS); break;
 	}
 }
 
@@ -155,9 +153,9 @@ void titleDraw(Gfx &g) {
 	}
 	float e = 1 - powf(1 - g_menuT, 3);
 	g.image(A.ui[UI_SUBTITLE], 160, 16, 0.9f, 0.9f, 0, Color(0xFFFFFF, e));
-	static const char *LBL[4] = {"Aufbruch", "Sternenkarte", "Training", "Optionen"};
-	static const float Y[4] = {34, 92, 136, 180};
-	for (int i = 0; i < 4; i++) {
+	static const char *LBL[4] = {"Zuflucht", "Optionen", "", ""};
+	static const float Y[4] = {60, 124, 0, 0};
+	for (int i = 0; i < 2; i++) {
 		float k = clampf(e * 1.6f - i * 0.15f, 0, 1);
 		float y = Y[i] + (1 - k) * 60;
 		int img = i == 0 ? UI_BTN_MAIN : UI_BTN;
@@ -165,7 +163,7 @@ void titleDraw(Gfx &g) {
 		drawButton(g, 10 + i, 44, y, img, i == 0 ? "" : LBL[i], g_focus == i, 0, tc);
 		if (i == 0) {
 			g.text(160, y + 5, 0.58f, tc, LBL[0], ALIGN_CENTER);
-			g.text(160, y + 27, 0.32f, Color(0xE8C060, k * 0.9f), "Neuer Abstieg in die Tiefe", ALIGN_CENTER);
+			g.text(160, y + 27, 0.32f, Color(0xE8C060, k * 0.9f), "Waffen, Sternenkarte, Abstieg", ALIGN_CENTER);
 		}
 		if (i == 1 && PROF.splitter) { char b[16]; snprintf(b, sizeof b, "%u", unsigned(PROF.splitter)); g.image(A.ui[UI_ICON_GEM], 238, y + 18, 0.36f, 0.36f, 0, Color(0xFFFFFF, k)); g.text(248, y + 11, 0.34f, Color(0x8AF0FF, k), b, ALIGN_LEFT); }
 	}
@@ -217,6 +215,7 @@ public:
 				switch (g_scene) {
 				case SC_TITLE: titleEnter(); break;
 				case SC_RUN: runEnter(); break;
+				case SC_HUB: hubEnter(); break;
 				case SC_TREE: treeEnter(); break;
 				case SC_OPTIONS: optionsEnter(); break;
 				case SC_TRAINING: trainingEnter(); break;
@@ -228,6 +227,7 @@ public:
 		switch (g_scene) {
 		case SC_TITLE: titleUpdate(dt, in); break;
 		case SC_RUN: runUpdate(dt, in); break;
+		case SC_HUB: hubUpdate(dt, in); break;
 		case SC_TREE: treeUpdate(dt, in); break;
 		case SC_OPTIONS: optionsUpdate(dt, in); break;
 		case SC_TRAINING: trainingUpdate(dt, in); break;
@@ -238,6 +238,7 @@ public:
 		switch (g_scene) {
 		case SC_TITLE: titleDraw(g); break;
 		case SC_RUN: runDraw(g); break;
+		case SC_HUB: hubDraw(g); break;
 		case SC_TREE: treeDraw(g); break;
 		case SC_OPTIONS: optionsDraw(g); break;
 		case SC_TRAINING: trainingDraw(g); break;

@@ -46,6 +46,7 @@ struct Pose {
 	float capeLift = 0;               // Umhang weht bei schneller Bewegung
 	float legSwing = 0, armSwingL = 0; // Laufzyklus (Beine, linker Arm)
 	float sink = 0;                   // Schatten-Dash: im Boden versinken (Meter)
+	int weapon = 0;                   // 0 Schattenklinge, 1 Schattendolche, 2 Mondsense
 };
 extern const Vec3 SEREN_SHOULDER, SEREN_HAND;
 void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose = nullptr, float flash = 0, bool weapon = true);
@@ -74,7 +75,7 @@ struct Fx {
 };
 
 // ------------------------------------------------------------------ Szenen
-enum SceneId { SC_TITLE, SC_RUN, SC_TREE, SC_OPTIONS, SC_TRAINING };
+enum SceneId { SC_TITLE, SC_RUN, SC_TREE, SC_OPTIONS, SC_TRAINING, SC_HUB };
 void gotoScene(int id);
 extern float g_time;
 
