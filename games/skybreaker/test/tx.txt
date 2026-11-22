@@ -1,0 +1,8 @@
+80 tap 160 120
+120 tap 160 80
+200 shot t_hub
+205 stick 0 -1 140
+350 key A
+370 key A
+500 shot t_run1
+520 quit

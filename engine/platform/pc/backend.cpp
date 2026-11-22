@@ -31,11 +31,13 @@ Color Color::mix(Color o, float t) const {
 struct RGBAf { float r, g, b, a; };
 static RGBAf toF(Color c) { return {((c.hex >> 16) & 255) / 255.f, ((c.hex >> 8) & 255) / 255.f, (c.hex & 255) / 255.f, clampf(c.a, 0, 1)}; }
 static RGBAf lerpF(RGBAf a, RGBAf b, float t) { return {a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t}; }
+static bool g_add;
 static void blend(int x, int y, RGBAf c, float cov) {
 	if (x < 0 || y < 0 || x >= curW || y >= curH) return;
 	float a = c.a * cov;
 	if (a <= 0) return;
 	float *p = cur[y * curW + x];
+	if (g_add) { p[0] = fminf(1, p[0] + c.r * a); p[1] = fminf(1, p[1] + c.g * a); p[2] = fminf(1, p[2] + c.b * a); return; }
 	p[0] += (c.r - p[0]) * a; p[1] += (c.g - p[1]) * a; p[2] += (c.b - p[2]) * a;
 }
 static void triF(float x0, float y0, RGBAf c0, float x1, float y1, RGBAf c1, float x2, float y2, RGBAf c2) {
@@ -128,6 +130,7 @@ static void drawImg(const PcImg *im, float cx, float cy, float ang, Color tint, 
 }
 
 // ------------------------------------------------------------------ Zeichnen
+void Gfx::additive(bool on) { g_add = on; }
 void Gfx::rect(float x, float y, float w, float h, Color c, float d) { rectGrad(x, y, w, h, c, c, d); }
 void Gfx::rectGrad(float x, float y, float w, float h, Color t, Color b, float d) {
 	if (w <= 0 || h <= 0) return;

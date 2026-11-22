@@ -1,40 +1,41 @@
 80 tap 160 120
-110 tap 160 155
-150 tap 280 195
-160 tap 280 195
-200 key SELECT
-210 key X
-230 shot g1_x
-260 key Y
-280 shot g1_y
-350 key SELECT
-360 key X
-380 shot g2_x
-410 key Y
-430 shot g2_y
-500 key SELECT
-510 key X
-530 shot g3_x
-560 key Y
-580 shot g3_y
-650 key SELECT
-660 key X
-680 shot g4_x
-710 key Y
-730 shot g4_y
-800 key SELECT
-810 key X
-830 shot g5_x
-860 key Y
-880 shot g5_y
-950 key SELECT
-960 key X
-980 shot g6_x
-1010 key Y
-1030 shot g6_y
-1100 key SELECT
-1110 key X
-1130 shot g7_x
-1160 key Y
-1180 shot g7_y
-1250 quit
+120 tap 160 80
+200 tap 282 214
+260 tap 280 195
+270 tap 280 195
+320 key SELECT
+330 key X
+350 shot g1_x
+380 key Y
+400 shot g1_y
+470 key SELECT
+480 key X
+500 shot g2_x
+530 key Y
+550 shot g2_y
+620 key SELECT
+630 key X
+650 shot g3_x
+680 key Y
+700 shot g3_y
+770 key SELECT
+780 key X
+800 shot g4_x
+830 key Y
+850 shot g4_y
+920 key SELECT
+930 key X
+950 shot g5_x
+980 key Y
+1000 shot g5_y
+1070 key SELECT
+1080 key X
+1100 shot g6_x
+1130 key Y
+1150 shot g6_y
+1220 key SELECT
+1230 key X
+1250 shot g7_x
+1280 key Y
+1300 shot g7_y
+1370 quit

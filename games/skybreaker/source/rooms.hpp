@@ -28,4 +28,4 @@ struct RoomGrid {
 };
 
 // Baut den Raum: Grundriss + statisches Mesh (Boden + Wände) + Leuchtteile (Fackelflammen/Kristalle)
-void buildRoom(RoomGrid &g, int layout, bool mirror, int biome, u32 seed, Mesh &mesh, Mesh &glow);
+void buildRoom(RoomGrid &g, int layout, bool mirror, int biome, u32 seed, Mesh &floorMesh, Mesh &wallMesh, Mesh &glow);

@@ -197,7 +197,15 @@ void draw(const Mesh &m, const Mat4 &model, const Material &mat) {
 	C3D_BufInfo *bi = C3D_GetBufInfo();
 	BufInfo_Init(bi);
 	BufInfo_Add(bi, m.v, sizeof(Vertex3D), 4, 0x3210);
+	if (mat.additive) {
+		C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE, GPU_SRC_ALPHA, GPU_ONE);
+		C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);
+	}
 	C3D_DrawElements(GPU_TRIANGLES, m.ni, C3D_UNSIGNED_SHORT, m.idx);
+	if (mat.additive) {
+		C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
+		C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+	}
 }
 
 void end(Gfx &g) {

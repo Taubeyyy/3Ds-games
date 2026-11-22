@@ -1,0 +1,2 @@
+-f rgb565 -m lanczos -z auto
+png/tex_floor_c.png

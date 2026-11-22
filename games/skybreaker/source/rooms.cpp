@@ -41,7 +41,18 @@ Vec3 RoomGrid::randomFloor(Rng &rng, Vec3 away, float minDist) const {
 
 static Color pick(Rng &r, const u32 *c, int n) { return Color(c[r.irange(0, n - 1)]); }
 
-void buildRoom(RoomGrid &g, int layout, bool mirror, int biome, u32 seed, Mesh &mesh, Mesh &glow) {
+// Quader mit Welt-UVs (Textur kachelt alle 2 m), Seiten nur wo nötig
+static void boxFaces(MeshBuilder &b, Vec3 c, Vec3 sz, Color col, bool top = true) {
+	float x0 = c.x - sz.x / 2, x1 = c.x + sz.x / 2, y0 = c.y, y1 = c.y + sz.y, z0 = c.z - sz.z / 2, z1 = c.z + sz.z / 2;
+	Color dk = col.mix(Color(0x000000), 0.18f);                 // unten etwas dunkler (Umgebungsverdeckung)
+	b.quad(Vec3(x0, y0, z1), Vec3(x1, y0, z1), Vec3(x1, y1, z1), Vec3(x0, y1, z1), dk, dk, col, col, Vec2(x0 / 2, -y0 / 2), Vec2(x1 / 2, -y1 / 2));
+	b.quad(Vec3(x1, y0, z0), Vec3(x0, y0, z0), Vec3(x0, y1, z0), Vec3(x1, y1, z0), dk, dk, col, col, Vec2(-x1 / 2, -y0 / 2), Vec2(-x0 / 2, -y1 / 2));
+	b.quad(Vec3(x1, y0, z1), Vec3(x1, y0, z0), Vec3(x1, y1, z0), Vec3(x1, y1, z1), dk, dk, col, col, Vec2(-z1 / 2, -y0 / 2), Vec2(-z0 / 2, -y1 / 2));
+	b.quad(Vec3(x0, y0, z0), Vec3(x0, y0, z1), Vec3(x0, y1, z1), Vec3(x0, y1, z0), dk, dk, col, col, Vec2(z0 / 2, -y0 / 2), Vec2(z1 / 2, -y1 / 2));
+	if (top) { Color tc = col.mix(Color(0x000000), 0.25f); b.quad(Vec3(x0, y1, z0), Vec3(x0, y1, z1), Vec3(x1, y1, z1), Vec3(x1, y1, z0), tc, tc, tc, tc, Vec2(x0 / 2, z0 / 2), Vec2(x1 / 2, z1 / 2)); }
+}
+
+void buildRoom(RoomGrid &g, int layout, bool mirror, int biome, u32 seed, Mesh &floorMesh, Mesh &wallMesh, Mesh &glow) {
 	memset(g.cell, 0, sizeof g.cell);
 	g.layout = layout;
 	g.nSlots = g.nTorch = g.nPillar = 0;
@@ -105,34 +116,23 @@ void buildRoom(RoomGrid &g, int layout, bool mirror, int biome, u32 seed, Mesh &
 		Vec3 c = g.cellCenter(chosen[k], jmin[chosen[k]]);
 		g.doorSlot[g.nSlots++] = Vec3(c.x, 0.075f, c.z - 0.42f);
 	}
-	// --- Mesh: Boden + Wände
-	MeshBuilder mb, gb;
-	static const u32 FLOOR_D[5] = {0x6E6670, 0x5E5862, 0x76706E, 0x56505A, 0x68625E};
-	static const u32 FLOOR_C[5] = {0x444C66, 0x3C4258, 0x4A5270, 0x363C52, 0x424A62};
-	static const u32 WALL_D[4] = {0x5A5460, 0x4E4856, 0x625C66, 0x48424E};
-	static const u32 WALL_C[4] = {0x2E3048, 0x363A56, 0x282A40, 0x3A3C5C};
-	const u32 *FL = biome == 1 ? FLOOR_C : FLOOR_D;
-	const u32 *WL = biome == 1 ? WALL_C : WALL_D;
+	// --- Mesh: Boden (Textur 4 m), Wände (Textur 2 m), Leuchtteile
+	MeshBuilder fb, wb, gb;
 	Mesh cube = Mesh::cube(Vec3(1, 1, 1), Color(0xFFFFFF));
-	Color grout(biome == 1 ? 0x141828 : 0x241E2A);
 	for (int j = 0; j < GH; j++)
 		for (int i = 0; i < GW; i++) {
 			float x0 = i - GW * 0.5f, z0 = j - GH * 0.5f;
 			if (g.cell[j][i]) {
-				Color c = pick(r, FL, 5);
-				if (biome == 0 && r.f() < 0.08f) c = c.mix(Color(0x4E6A3E), 0.5f);
-				mb.quad(Vec3(x0, 0.06f, z0), Vec3(x0, 0.06f, z0 + 1), Vec3(x0 + 1, 0.06f, z0 + 1), Vec3(x0 + 1, 0.06f, z0), grout, grout, grout, grout);
-				// zwei Platten pro Zelle, leicht versetzt
-				float s = 0.035f;
-				bool split = (i + j) % 2;
-				if (split) {
-					mb.quad(Vec3(x0 + s, 0.075f, z0 + s), Vec3(x0 + s, 0.075f, z0 + 0.5f - s * 0.5f), Vec3(x0 + 1 - s, 0.075f, z0 + 0.5f - s * 0.5f), Vec3(x0 + 1 - s, 0.075f, z0 + s), c, c, c, c);
-					Color c2 = c.mix(Color(0x000000), 0.08f);
-					mb.quad(Vec3(x0 + s, 0.075f, z0 + 0.5f + s * 0.5f), Vec3(x0 + s, 0.075f, z0 + 1 - s), Vec3(x0 + 1 - s, 0.075f, z0 + 1 - s), Vec3(x0 + 1 - s, 0.075f, z0 + 0.5f + s * 0.5f), c2, c2, c2, c2);
-				} else mb.quad(Vec3(x0 + s, 0.075f, z0 + s), Vec3(x0 + s, 0.075f, z0 + 1 - s), Vec3(x0 + 1 - s, 0.075f, z0 + 1 - s), Vec3(x0 + 1 - s, 0.075f, z0 + s), c, c, c, c);
+				float k = r.range(0.9f, 1.04f);
+				Color c = Color(0xFFFFFF).mix(Color(0x000000), 1 - k);
+				// dunkler am Rand (Wandschatten)
+				bool nearWall = false;
+				for (int dj = -1; dj <= 1; dj++) for (int di = -1; di <= 1; di++) { int ii = i + di, jj = j + dj; if (ii >= 0 && jj >= 0 && ii < GW && jj < GH && !g.cell[jj][ii]) nearWall = true; }
+				if (nearWall) c = c.mix(Color(0x000000), 0.28f);
+				fb.quad(Vec3(x0, 0.075f, z0), Vec3(x0, 0.075f, z0 + 1), Vec3(x0 + 1, 0.075f, z0 + 1), Vec3(x0 + 1, 0.075f, z0), c, c, c, c,
+				        Vec2(x0 / 4, z0 / 4), Vec2((x0 + 1) / 4, (z0 + 1) / 4));
 				continue;
 			}
-			// Wand, wenn ein Nachbar Boden ist
 			bool adj = false, floorNorth = false;
 			for (int dj = -1; dj <= 1; dj++)
 				for (int di = -1; di <= 1; di++) {
@@ -143,30 +143,29 @@ void buildRoom(RoomGrid &g, int layout, bool mirror, int biome, u32 seed, Mesh &
 				}
 			if (!adj) continue;
 			float h = floorNorth ? 0.45f : (j >= cz + 1 ? 1.0f : 2.6f + r.range(0, 0.6f));
-			Color wc = pick(r, WL, 4);
+			Color wc = Color(0xFFFFFF).mix(Color(0x000000), r.range(0.0f, 0.15f));
 			Vec3 c(x0 + 0.5f, 0, z0 + 0.5f);
 			if (biome == 1) {
-				mb.add(cube, Mat4::translate(c + Vec3(r.range(-0.08f, 0.08f), h * 0.5f, r.range(-0.08f, 0.08f))) * Mat4::rotY(r.range(-0.3f, 0.3f)) * Mat4::scale(Vec3(1.12f, h, 1.12f)), wc);
-				mb.add(cube, Mat4::translate(c + Vec3(0, h + 0.12f, 0)) * Mat4::rotY(r.range(0, 1.5f)) * Mat4::rotX(0.2f) * Mat4::scale(Vec3(0.8f, 0.3f, 0.8f)), wc.mix(Color(0x000000), 0.15f));
-				if (h > 2 && r.f() < 0.45f) {                         // Kristallbüschel
+				boxFaces(wb, c + Vec3(r.range(-0.06f, 0.06f), 0, r.range(-0.06f, 0.06f)), Vec3(1.1f, h, 1.1f), wc);
+				wb.add(cube, Mat4::translate(c + Vec3(0, h + 0.1f, 0)) * Mat4::rotY(r.range(0, 1.5f)) * Mat4::rotX(0.25f) * Mat4::scale(Vec3(0.9f, 0.35f, 0.9f)), wc.mix(Color(0x000000), 0.2f));
+				if (h > 2 && r.f() < 0.5f && j + 1 < GH && g.cell[j + 1][i]) {
 					static const u32 CRY[4] = {0x7AE8FF, 0xB08AFF, 0x5AC8FF, 0xD8A0FF};
 					for (int k = 0; k < 3; k++) {
-						float hh = r.range(0.4f, 0.9f);
-						Vec3 cp = c + Vec3(r.range(-0.4f, 0.4f), 0.1f + hh * 0.5f, 0.55f + r.range(0, 0.1f));
-						if (g.cellCenter(i, j + 1).z > c.z && j + 1 < GH && g.cell[j + 1][i]) gb.add(cube, Mat4::translate(cp) * Mat4::rotZ(r.range(-0.4f, 0.4f)) * Mat4::rotY(0.78f) * Mat4::scale(Vec3(0.14f, hh, 0.14f)), Color(CRY[r.irange(0, 3)]));
+						float hh = r.range(0.4f, 1.0f);
+						Vec3 cp = c + Vec3(r.range(-0.4f, 0.4f), 0.1f + hh * 0.5f, 0.6f + r.range(0, 0.08f));
+						gb.add(cube, Mat4::translate(cp) * Mat4::rotZ(r.range(-0.4f, 0.4f)) * Mat4::rotY(0.78f) * Mat4::scale(Vec3(0.14f, hh, 0.14f)), Color(CRY[r.irange(0, 3)]));
 					}
 				}
 			} else {
-				mb.add(cube, Mat4::translate(c + Vec3(0, h * 0.5f, 0)) * Mat4::scale(Vec3(1.02f, h, 1.02f)), wc);
+				boxFaces(wb, c, Vec3(1.0f, h, 1.0f), wc);
 				if (h > 2) {
-					mb.add(cube, Mat4::translate(c + Vec3(0, h + 0.05f, 0)) * Mat4::scale(Vec3(1.08f, 0.1f, 1.08f)), wc.mix(Color(0x000000), 0.2f));
-					for (int k = 1; k < 4; k++) mb.add(cube, Mat4::translate(c + Vec3(0, h * k / 4, 0.512f)) * Mat4::scale(Vec3(1.0f, 0.03f, 0.01f)), Color(0x2A2430));
+					boxFaces(wb, c + Vec3(0, h, 0), Vec3(1.1f, 0.14f, 1.1f), wc.mix(Color(0x000000), 0.15f));
+					if (i % 4 == 2) boxFaces(wb, c + Vec3(0, 0, 0.5f), Vec3(0.34f, h, 0.18f), wc.mix(Color(0xFFFFFF), 0.1f));   // Strebepfeiler
 				}
-				// Fackel an Rückwänden mit Boden südlich
 				if (h > 2 && j + 1 < GH && g.cell[j + 1][i] && (i % 3 == 0) && g.nTorch < 10) {
 					Vec3 tp = c + Vec3(0, 1.9f, 0.62f);
-					mb.add(cube, Mat4::translate(tp + Vec3(0, -0.15f, -0.05f)) * Mat4::scale(Vec3(0.08f, 0.3f, 0.1f)), Color(0x3A3038));
-					mb.add(cube, Mat4::translate(tp) * Mat4::scale(Vec3(0.18f, 0.06f, 0.18f)), Color(0x2E2830));
+					wb.add(cube, Mat4::translate(tp + Vec3(0, -0.15f, -0.05f)) * Mat4::scale(Vec3(0.08f, 0.3f, 0.1f)), Color(0x5A5060));
+					wb.add(cube, Mat4::translate(tp) * Mat4::scale(Vec3(0.18f, 0.06f, 0.18f)), Color(0x4A4050));
 					gb.add(cube, Mat4::translate(tp + Vec3(0, 0.14f, 0)) * Mat4::rotY(0.78f) * Mat4::scale(Vec3(0.12f, 0.24f, 0.12f)), Color(0xFF7A2A));
 					gb.add(cube, Mat4::translate(tp + Vec3(0, 0.2f, 0)) * Mat4::rotY(0.3f) * Mat4::scale(Vec3(0.07f, 0.18f, 0.07f)), Color(0xFFE070));
 					g.torch[g.nTorch++] = tp + Vec3(0, 0.25f, 0.1f);
@@ -179,9 +178,11 @@ void buildRoom(RoomGrid &g, int layout, bool mirror, int biome, u32 seed, Mesh &
 			if (j <= 0) continue;
 			g.torch[g.nTorch++] = g.cellCenter(i, j) + Vec3(0, 1.2f, -0.3f);
 		}
-	mb.build(&mesh);
+	fb.build(&floorMesh);
+	wb.build(&wallMesh);
 	gb.build(&glow);
-	mb.free();
+	fb.free();
+	wb.free();
 	gb.free();
 	cube.free();
 }

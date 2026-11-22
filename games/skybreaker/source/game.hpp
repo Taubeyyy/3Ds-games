@@ -25,6 +25,7 @@ struct Assets {
 	Sound theme;
 	Sound click, select, whoosh, chime, error, swing, swing3, hit, hitHeavy, dash, cast, spin, step;
 	Sound motif[CH_COUNT];
+	Texture3D texFloor[2], texWall[2];   // [0] Dungeon, [1] Grotte
 };
 extern Assets A;
 

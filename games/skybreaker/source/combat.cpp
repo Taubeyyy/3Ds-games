@@ -65,7 +65,7 @@ static Bolt g_bolt[8];
 static Blast g_blast[8];
 static int g_ghostN, g_numN, g_slashN, g_boltN;
 static Fx g_fx;
-static float g_hitStop, g_shake, g_comboT, g_lastHitT, g_hurtFlash;
+static float g_hitStop, g_shake, g_comboT, g_lastHitT, g_hurtFlash, g_kick;
 static struct { float t; int d; } g_log[64];
 static int g_logN;
 static Vec3 g_camFocus;
@@ -153,9 +153,26 @@ void Arena::newRoom(int seed, bool keepHero) {
 	// Hindernisse: 2 Feuerschalen am Rand + zufällige Säulen/Felsen
 	Rng r(u32(seed * 7919 + 13));
 	nObst = 0;
-	gridMode = !training && !hub;
-	if (gridMode) {
-		buildRoom(grid, layout, r.f() < 0.5f, biome, u32(seed * 2654435761u), roomMesh, roomGlow);
+	gridMode = true;
+	if (training || hub) {
+		layout = LY_ROUND;
+		buildRoom(grid, LY_ROUND, false, biome, 7u, roomFloor, roomWall, roomGlow);
+		hero.pos = Vec3(0, 0.075f, 2.6f);
+		g_camFocus = flat(hero.pos);
+		if (hub) {
+			obst[nObst++] = {WM_BRAZIER, Vec3(-1.5f, 0.07f, -3.6f), 0.36f, 0, 1, true};
+			obst[nObst++] = {WM_BRAZIER, Vec3(1.5f, 0.07f, -3.6f), 0.36f, 0, 1, true};
+			obst[nObst++] = {WM_R_ALTAR, Vec3(-2.7f, 0.07f, -2.3f), 0.62f, 0.5f, 1, false};
+			obst[nObst++] = {WM_R_RACK, Vec3(2.8f, 0.07f, -2.6f), 0.7f, -0.75f, 1, false};
+		} else {
+			obst[nObst++] = {WM_BRAZIER, Vec3(-3.0f, 0.07f, -2.6f), 0.36f, 0, 1, true};
+			obst[nObst++] = {WM_BRAZIER, Vec3(3.0f, 0.07f, -2.6f), 0.36f, 0, 1, true};
+		}
+		floorTint = Color(0xFFFFFF);
+		return;
+	}
+	{
+		buildRoom(grid, layout, r.f() < 0.5f, biome, u32(seed * 2654435761u), roomFloor, roomWall, roomGlow);
 		hero.pos = grid.entry;
 		for (int k = 0; k < grid.nPillar; k++) obst[nObst++] = {WM_R_COLUMN, grid.pillar[k], 0.42f, r.range(0, 6.28f), 1.1f, false};
 		if (biome == 0)
@@ -317,6 +334,7 @@ static void damageEnemy(Enemy &e, float dmg, Vec3 from, int god, float pow, int 
 	}
 	if (!(flags & HF_NOSTOP)) {
 		g_hitStop = fmaxf(g_hitStop, (flags & HF_HEAVY) ? 0.085f : 0.045f);
+		if (flags & HF_HEAVY) g_kick = 1;
 		if (S.shake) g_shake = fmaxf(g_shake, (flags & HF_HEAVY) ? 0.3f : 0.13f);
 		sfx((flags & HF_HEAVY) ? A.hitHeavy : A.hit, g_r.range(0.9f, 1.15f), 0.85f);
 	}
@@ -342,6 +360,7 @@ static void killEnemy(Enemy &e) {
 	Color c = e.elite ? Color(0xFFD25A) : Color(0xC8A0FF);
 	g_fx.emit(e.pos + Vec3(0, 0.6f * e.scale, 0), 22, UI_P_SPARK, Color(0xFFFFFF), c.alpha(0), 6, 0.6f, 0.3f, 0.05f, 3, Vec3(0, 1, 0), 1);
 	g_fx.emit(e.pos + Vec3(0, 0.4f, 0), 10, UI_P_WISP, Color(0x6A5AA0, 0.6f), Color(0x2A1A40, 0), 2, 0.8f, 0.4f, 0.9f, -1);
+	g_fx.emit(e.pos + Vec3(0, 0.7f * e.scale, 0), 1, UI_P_GLOW, c.alpha(1), c.alpha(0), 0, 0.35f, 2.2f * e.scale, 3.5f * e.scale);
 	int coins = (e.type == EN_BRUTE || e.type == EN_GEODE ? 4 : e.type == EN_BOSS || e.type == EN_QUEEN || e.type == EN_GEODELET ? 0 : 1) + (e.elite ? 5 : 0);
 	a.coinsGained += int(coins * a.mods.coinMul + 0.5f);
 	if (coins) g_fx.emit(e.pos + Vec3(0, 0.6f, 0), coins + 2, UI_P_EMBER, Color(0xFFE070), Color(0xFFB030, 0), 3, 0.7f, 0.12f, 0.05f, 8, Vec3(0, 1, 0), 0.8f);
@@ -728,6 +747,7 @@ void Arena::update(float dt, const Input &in) {
 	for (auto &b : g_bolt) b.t += dt;
 	for (auto &t : g_tele) t.t += dt;
 	g_shake = fmaxf(0, g_shake - dt * 1.6f);
+	g_kick = fmaxf(0, g_kick - dt * 6);
 	g_hurtFlash = fmaxf(0, g_hurtFlash - dt * 2.5f);
 	if (g_hitStop > 0) { g_hitStop -= dt; return; }
 	Hero &h = hero;
@@ -842,7 +862,7 @@ void Arena::update(float dt, const Input &in) {
 			if ((!h.hitDone && x > 0.3f) || second) {
 				if (second) h.combo = 9; else h.hitDone = true;
 				Mat4 base = Mat4::translate(h.pos + Vec3(0, 0.95f, 0));
-				for (int i = 0; i < 3; i++) spawnSlash(base * Mat4::rotY(h.yaw + i * 2.09f + x * 3) * Mat4::scale(Vec3(2.3f, 1, 2.3f)), 0.3f, sc.alpha(0.5f));
+				for (int i = 0; i < 3; i++) spawnSlash(base * Mat4::rotY(h.yaw + i * 2.09f + x * 3) * Mat4::scale(Vec3(2.15f, 1, 2.15f)), 0.28f, sc.alpha(0.34f));
 				float sp = mods.slotPow[SL_SPECIAL];
 				hitRadius(h.pos, 2.4f, 34 * mods.specialMul, sg, sp, HF_HEAVY, sc);
 				g_fx.emit(h.pos + Vec3(0, 0.9f, 0), 18, UI_P_SPARK, sc.lighten(0.4f), sc.alpha(0), 8, 0.4f, 0.22f, 0, 0, Vec3(), 1);
@@ -1223,11 +1243,11 @@ void Arena::draw(Gfx &g) {
 	if (g_shake > 0) sh = Vec3(g_r.range(-1, 1), g_r.range(-1, 1), g_r.range(-1, 1)) * (g_shake * 0.16f);
 	cam.target = g_camFocus + Vec3(0, 0.6f, 0) + sh;
 	cam.eye = g_camFocus + Vec3(0, 6.9f, 6.3f) + sh;
-	cam.fov = 42;
+	cam.fov = 42 - 2.5f * g_kick;
 	cam.focus = (cam.eye - cam.target).len();
 	cam.zfar = 300;
 	Scene3D sc;
-	sc.ambient = Color(0x3C3648);
+	sc.ambient = Color(0x4E4860);
 	Light3D sun; sun.pos = Vec3(0.3f, 1.0f, 0.5f); sun.color = Color(0xB8B0D8); sun.intensity = 0.42f;
 	sc.lights[sc.nLights++] = sun;
 	{                                                                  // zwei nächste Wandfackeln
@@ -1269,8 +1289,16 @@ void Arena::draw(Gfx &g) {
 	al.specular = 0.3f;
 	al.color = floorTint;
 	if (gridMode) {
-		gfx3d::draw(roomMesh, Mat4::identity(), al);
-		Material rg; rg.lit = false;
+		Material fm = al;
+		fm.tex = &A.texFloor[biome];
+		fm.specular = 0.35f;
+		fm.shininess = 18;
+		gfx3d::draw(roomFloor, Mat4::identity(), fm);
+		Material wm2 = lit;
+		wm2.tex = &A.texWall[biome];
+		wm2.specular = 0.12f;
+		gfx3d::draw(roomWall, Mat4::identity(), wm2);
+		Material rg; rg.lit = false; rg.additive = true;
 		rg.color = biome == 1 ? Color(0xFFFFFF).mix(Color(0xC8D8FF), 0.5f + 0.5f * sinf(t * 1.2f)) : Color(0xFFFFFF).mix(Color(0xFFD0A0), 0.5f + 0.5f * sinf(t * 13));
 		gfx3d::draw(roomGlow, Mat4::identity(), rg);
 	} else if (biome == 1) {
@@ -1292,21 +1320,21 @@ void Arena::draw(Gfx &g) {
 		Mat4 bm = Mat4::translate(o.pos) * Mat4::rotY(o.yaw) * Mat4::scale(Vec3(o.scale, o.scale, o.scale));
 		gfx3d::draw(A.world[o.mesh], bm, lit);
 		if (o.fire) {
-			Material fm; fm.lit = false;
+			Material fm; fm.lit = false; fm.additive = true;
 			float fl = 1 + 0.08f * sinf(t * 13 + k) + 0.05f * sinf(t * 29);
 			gfx3d::draw(A.world[WM_BRAZIER_FIRE], bm * Mat4::translate(Vec3(0, 1.1f, 0)) * Mat4::scale(Vec3(1, fl, 1)) * Mat4::translate(Vec3(0, -1.1f, 0)), fm);
 		}
 	}
 	if (hub) {                                                         // Zuflucht: Teppich, Regale, Banner, Tor, Altar, Waffen
 		gfx3d::draw(A.world[WM_R_HUBDECOR], Mat4::identity(), lit);
-		Mat4 gm = Mat4::translate(Vec3(0, 0.075f, -4.6f)) * Mat4::scale(Vec3(1.3f, 1.3f, 1.3f));
+		Mat4 gm = Mat4::translate(Vec3(0, 0.075f, -4.42f)) * Mat4::scale(Vec3(1.3f, 1.3f, 1.3f));
 		gfx3d::draw(A.world[WM_R_DOOR], gm, lit);
 		Material pm; pm.lit = false; pm.color = Color(0x8AE8FF, 0.7f + 0.15f * sinf(t * 1.3f));
 		gfx3d::draw(A.world[WM_R_PORTAL], gm, pm);
 		Material ag2; ag2.lit = false;
-		Mat4 am = Mat4::translate(Vec3(-2.7f, 0.07f + 0.06f * sinf(t * 1.5f), -2.5f));
+		Mat4 am = Mat4::translate(Vec3(-2.7f, 0.07f + 0.06f * sinf(t * 1.5f), -2.3f));
 		gfx3d::draw(A.world[WM_R_ALTAR_GLOW], am * Mat4::translate(Vec3(0, 1.75f, 0)) * Mat4::rotY(t * 0.8f) * Mat4::translate(Vec3(0, -1.75f, 0)), ag2);
-		Mat4 rm = Mat4::translate(Vec3(2.9f, 0.07f, -2.8f)) * Mat4::rotY(-0.75f);
+		Mat4 rm = Mat4::translate(Vec3(2.8f, 0.07f, -2.6f)) * Mat4::rotY(-0.75f);
 		Material wm; wm.specular = 0.7f; wm.shininess = 30;
 		gfx3d::draw(CM[CH_SEREN].part[PK_WEAPON], rm * Mat4::translate(Vec3(-0.45f, 1.28f, 0.1f)) * Mat4::rotX(PI), wm);
 		gfx3d::draw(A.world[WM_R_DAGGER], rm * Mat4::translate(Vec3(-0.05f, 1.28f, 0.1f)) * Mat4::rotX(PI), wm);
@@ -1322,7 +1350,7 @@ void Arena::draw(Gfx &g) {
 		float shakeD = d.t < 0.7f ? sinf(d.t * 70) * 0.03f : 0;
 		Mat4 dm = Mat4::translate(d.pos + Vec3(shakeD, -(1 - up) * 2.8f, 0)) * Mat4::rotY(d.yaw) * Mat4::scale(Vec3(0.8f, 0.8f, 0.8f));
 		gfx3d::draw(A.world[WM_R_DOOR], dm, lit);
-		Material pm; pm.lit = false;
+		Material pm; pm.lit = false; pm.additive = true;
 		Color pc(d.reward == PK2_BOON ? godColor(d.god) : d.room == RT_SHOP ? 0xFFD25A : d.room == RT_BOSS ? 0xFF4A3A : 0xB0D8FF);
 		pm.color = pc.alpha((pickup.active ? 0.15f : 0.55f + 0.2f * sinf(t * 3)) * clampf((d.t - 0.5f) * 3, 0, 1));
 		gfx3d::draw(A.world[WM_R_PORTAL], dm, pm);
@@ -1366,7 +1394,7 @@ void Arena::draw(Gfx &g) {
 	for (const Blast &b : g_blast) {
 		if (b.t < 0 || b.t >= 0.35f) continue;
 		float k = b.t / 0.35f;
-		Material bm; bm.lit = false; bm.color = Color(b.hurtsHero ? 0xFFB080 : godColor(b.god)).alpha(0.7f * (1 - k));
+		Material bm; bm.lit = false; bm.additive = true; bm.color = Color(b.hurtsHero ? 0xFFB080 : godColor(b.god)).alpha(0.7f * (1 - k));
 		gfx3d::draw(A.disc, Mat4::translate(b.p + Vec3(0, 0.1f, 0)) * Mat4::scale(Vec3(b.r * (0.6f + 0.5f * k), 1, b.r * (0.6f + 0.5f * k))), bm);
 	}
 	// Schatten
@@ -1398,7 +1426,7 @@ void Arena::draw(Gfx &g) {
 		h.pose.weapon = mods.weapon;
 		drawChar(CH_SEREN, hx, t, &h.pose, fmaxf(h.flash, h.armorT > 0 ? 0.25f : 0));
 	}
-	Material pg; pg.lit = false;
+	Material pg; pg.lit = false; pg.additive = true;
 	for (const HProj &p : g_hp) {
 		if (p.life <= 0) continue;
 		pg.color = Color(p.god >= 0 ? godColor(p.god) : 0xC8FFFF).lighten(0.4f);
@@ -1414,7 +1442,7 @@ void Arena::draw(Gfx &g) {
 	for (const Summon &m : g_sum) {
 		if (!m.active) continue;
 		float fade = clampf((m.dur - m.t) * 3, 0, 1) * clampf(m.t * 6, 0, 1);
-		Material sm; sm.lit = false;
+		Material sm; sm.lit = false; sm.additive = m.kind != SM_WOLF && m.kind != SM_CLONE;
 		switch (m.kind) {
 		case SM_TORNADO:
 			sm.color = Color(0xF0F8FF, 0.7f * fade);
@@ -1445,12 +1473,12 @@ void Arena::draw(Gfx &g) {
 		}
 		}
 	}
-	Material ep; ep.lit = false; ep.color = Color(0x9AFFF8);
+	Material ep; ep.lit = false; ep.additive = true; ep.color = Color(0x9AFFF8);
 	for (const EProj &p : g_ep) if (p.life > 0) gfx3d::draw(A.shard, Mat4::translate(p.p) * Mat4::scale(Vec3(1.8f, 1.8f, 1.8f)), ep);
 	for (const SlashFx &s : g_slash) {
 		if (s.t >= s.dur) continue;
 		float k = s.t / s.dur;
-		Material sm; sm.lit = false; sm.color = s.c.alpha(s.c.a * (1 - k * k));
+		Material sm; sm.lit = false; sm.additive = true; sm.color = s.c.alpha(s.c.a * (1 - k * k));
 		float sc2 = 0.85f + 0.3f * k;
 		gfx3d::draw(A.slash, s.xf * Mat4::scale(Vec3(sc2, 1, sc2)), sm);
 	}
@@ -1458,6 +1486,7 @@ void Arena::draw(Gfx &g) {
 	// 2D über der Szene
 	Vec2 sp, sp2;
 	float dep, dep2;
+	g.additive(true);
 	for (int k = 0; k < nObst; k++)
 		if (obst[k].fire && gfx3d::project(g, cam, obst[k].pos + Vec3(0, 1.3f, 0), &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 1.1f, 1.1f, 0, Color(0xFF9A4A, 0.45f + 0.1f * sinf(t * 11)), 1, dep);
 	if (gridMode) {
@@ -1476,6 +1505,7 @@ void Arena::draw(Gfx &g) {
 	for (const EProj &p : g_ep)
 		if (p.life > 0 && gfx3d::project(g, cam, p.p, &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 0.6f, 0.6f, 0, Color(0x6AFFF0, 0.8f), 1, dep);
 	if (gfx3d::project(g, cam, h.pos + Vec3(0.08f, 1.2f, 0.15f), &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 0.35f, 0.35f, 0, Color(0x8AF0FF, 0.55f), 1, dep);
+	g.additive(false);
 	for (const Bolt &b : g_bolt) {
 		if (b.t > 0.14f) continue;
 		if (!gfx3d::project(g, cam, b.a, &sp, &dep) || !gfx3d::project(g, cam, b.b, &sp2, &dep2)) continue;
@@ -1507,7 +1537,9 @@ void Arena::draw(Gfx &g) {
 		if (e.slowT > 0) g.circle(sp.x + w / 2 + 17, sp.y + 1, 2.5f, Color(0x3CDCD2), dep);
 	}
 	if (pickup.active && pickup.t > 0.45f && gfx3d::project(g, cam, pickup.pos + Vec3(0, 0.6f, 0), &sp, &dep)) {
+		g.additive(true);
 		g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 1.4f, 1.4f, 0, Color(pickup.kind == PK2_BOON ? godColor(pickup.god) : 0xFFE08A, 0.55f), 1, dep);
+		g.additive(false);
 		g.image(A.ui[pickIcon(pickup.kind, pickup.god)], sp.x, sp.y - 34, 0.6f, 0.6f, 0, Color(0xFFFFFF), 0, dep - 0.5f);
 	}
 	for (const Door &d : doors) {
@@ -1539,6 +1571,7 @@ void Arena::draw(Gfx &g) {
 		g.text(386, 26, 0.9f * pop, Color(0xFFE08A), b, ALIGN_RIGHT, 0, true, -2);
 		g.text(386, 58, 0.34f, Color(0xFFFFFF, 0.8f), "TREFFER", ALIGN_RIGHT, 0, true, -2);
 	}
+	g.image(A.ui[UI_VIGNETTE], 200, 120, 400.0f / 128, 240.0f / 64, 0, Color(0xFFFFFF, 0.7f), 0, -1);
 	if (g_hurtFlash > 0) {
 		Color c(0xFF2A2A, 0.35f * g_hurtFlash);
 		g.rect(0, 0, 400, 14, c, -3); g.rect(0, 226, 400, 14, c, -3); g.rect(0, 0, 14, 240, c, -3); g.rect(386, 0, 14, 240, c, -3);

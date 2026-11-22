@@ -114,6 +114,7 @@ public:
 	float px(float x, float depth) const { return x + ox + eye * depth * stereo; }
 	float py(float y) const { return y + oy; }
 
+	void additive(bool on); // Leuchtmodus: folgende 2D-Elemente addieren ihre Farbe (Glühen, Funken)
 	void rect(float x, float y, float w, float h, Color c, float depth = 0);
 	void rectGrad(float x, float y, float w, float h, Color top, Color bottom, float depth = 0);
 	void rrect(float x, float y, float w, float h, float r, Color top, Color bottom, float depth = 0);

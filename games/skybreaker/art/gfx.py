@@ -457,6 +457,8 @@ def build():
         ui.append(save(icon(ic), "icon_" + ic))
     ui.append(save(panel(96, 120, (40, 34, 80), (16, 14, 34), (232, 192, 96), ornament=False, r=10), "card"))
     ui.append(save(panel(96, 120, (30, 26, 56), (12, 10, 26), (120, 110, 160), ornament=False, r=10), "card_off"))
+    from textures import vignette
+    ui.append(save(vignette(), "vignette"))
     open(os.path.join(GFX, "ui.t3s"), "w").write("--atlas -f rgba8 -z auto\n" + "\n".join(ui) + "\n")
     s, crack = sky()
     bg = [save(s, "sky"), save(crack, "crack"), save(bottom_bg(), "bottom"), save(pantheon_bg(), "pantheon")]

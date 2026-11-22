@@ -3,6 +3,10 @@
 #include "game.hpp"
 #include "ui_t3x.h"
 #include "bg_t3x.h"
+#include "tex_floor_d_t3x.h"
+#include "tex_wall_d_t3x.h"
+#include "tex_floor_c_t3x.h"
+#include "tex_wall_c_t3x.h"
 #include "theme_wav.h"
 #include "motif_ignara_wav.h"
 #include "motif_thalor_wav.h"
@@ -93,6 +97,10 @@ void loadAssets() {
 	}
 	for (const PartSrc &w : WORLD_SRC) A.world[w.ch].loadMem(w.data, w.size);
 	A.slash = slashMesh();
+	A.texFloor[0].loadMem(FORGE_SHEET(tex_floor_d));
+	A.texWall[0].loadMem(FORGE_SHEET(tex_wall_d));
+	A.texFloor[1].loadMem(FORGE_SHEET(tex_floor_c));
+	A.texWall[1].loadMem(FORGE_SHEET(tex_wall_c));
 	A.ring = Mesh::cylinder(1, 0.02f, 28, Color(0xFFFFFF));
 	A.disc = Mesh::cylinder(1, 0.01f, 20, Color(0xFFFFFF));
 	A.shard = Mesh::sphere(0.12f, 4, 2, Color(0xFFFFFF));
@@ -156,6 +164,7 @@ void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose, float flash, bo
 	if (flash > 0) body.emission = Color(0x000000).mix(Color(0xFFFFFF), clampf(flash, 0, 1));
 	Material glow;
 	glow.lit = false;
+	glow.additive = true;
 	float breathe = 1 + 0.012f * sinf(t * 2.2f + ch);
 	Mat4 base = P.sink != 0 ? Mat4::translate(Vec3(0, -P.sink, 0)) * xf : xf;
 	Mat4 bx = base * Mat4::rotY(P.bodyTwist);
@@ -260,10 +269,13 @@ void Fx::update(float dt) {
 		q.p += q.v * dt;
 	}
 }
+static bool glowImg(int img) { return img == UI_P_SPARK || img == UI_P_EMBER || img == UI_P_GLOW || img == UI_P_BUBBLE; }
 void Fx::draw(Gfx &g, const Camera3D &cam, float scale) const {
 	float ppm = g.height * 0.5f / tanf(cam.fov * PI / 360); // Pixel pro Meter bei Abstand 1
+	for (int pass = 0; pass < 2; pass++) {
+	if (pass == 1) g.additive(true);
 	for (const P &q : p) {
-		if (q.life <= 0) continue;
+		if (q.life <= 0 || glowImg(q.img) != (pass == 1)) continue;
 		Vec2 s;
 		float dep;
 		if (!gfx3d::project(g, cam, q.p, &s, &dep)) continue;
@@ -274,6 +286,8 @@ void Fx::draw(Gfx &g, const Camera3D &cam, float scale) const {
 		Color c = q.c0.mix(q.c1, k);
 		g.image(im, s.x, s.y, sz / im.w, sz / im.height(), 0, c, 1, dep);
 	}
+	}
+	g.additive(false);
 }
 
 // ------------------------------------------------------------------ UI-Hilfen

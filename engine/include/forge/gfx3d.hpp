@@ -93,6 +93,7 @@ struct Material {
 	float specular = 0.3f;     // 0..1
 	float shininess = 20;      // Glanz-Exponent
 	bool lit = true;
+	bool additive = false;     // Leuchten: Farbe wird addiert (kein Tiefenschreiben) – für Hiebe, Magie, Glut
 	const Texture3D *tex = nullptr;
 };
 

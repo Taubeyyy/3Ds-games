@@ -10,7 +10,7 @@ const char *WEAPON_DESC[3] = {
 const int WEAPON_COST[3] = {0, 20, 35};
 
 enum { ST_NONE, ST_ALTAR, ST_RACK, ST_GATE, ST_DUMMY };
-static const Vec3 ST_POS[5] = {Vec3(), Vec3(-2.7f, 0, -2.5f), Vec3(2.9f, 0, -2.8f), Vec3(0, 0, -4.2f), Vec3(2.4f, 0, 0.6f)};
+static const Vec3 ST_POS[5] = {Vec3(), Vec3(-2.7f, 0, -2.3f), Vec3(2.8f, 0, -2.6f), Vec3(0, 0, -3.9f), Vec3(2.4f, 0, 0.6f)};
 static const char *ST_LABEL[5] = {"", "Sternenaltar", "Waffenständer", "Abstieg", "Übungspuppe"};
 static int g_near, g_overlay, g_sel;
 static float g_t;

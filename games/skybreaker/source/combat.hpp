@@ -77,7 +77,7 @@ public:
 	bool gridMode = false;
 	int layout = LY_ROUND;
 	RoomGrid grid;
-	Mesh roomMesh, roomGlow;
+	Mesh roomFloor, roomWall, roomGlow;
 	// Ereignisse dieses Bildes (für die Lauf-Logik)
 	int kills = 0, doorEntered = -1;
 	bool pickupTaken = false, heroDied = false;

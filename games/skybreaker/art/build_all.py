@@ -2,7 +2,7 @@
 import os, sys, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-for script in ("gfx.py", "world.py", "enemies.py", "music.py", "motifs.py"):
+for script in ("textures.py", "gfx.py", "world.py", "enemies.py", "music.py", "motifs.py"):
     subprocess.check_call([sys.executable, os.path.join(HERE, script)], stdout=subprocess.DEVNULL)
 import characters
 data = os.path.join(HERE, "..", "data")

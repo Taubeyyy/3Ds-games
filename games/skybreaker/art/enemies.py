@@ -299,7 +299,7 @@ def rack():
     return m.vary(0.06, 142)
 
 
-def hubdecor(R=5.25):
+def hubdecor(R=4.55):
     import random
     rnd = random.Random(55)
     m = Mesh()

@@ -75,6 +75,11 @@ void SpriteSheet::free() {
 }
 
 // ------------------------------------------------------------------ Zeichnen
+void Gfx::additive(bool on) {
+	C2D_Flush();
+	if (on) C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE, GPU_SRC_ALPHA, GPU_ONE);
+	else C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
+}
 void Gfx::rect(float x, float y, float w, float h, Color c, float d) { C2D_DrawRectSolid(px(x, d), py(y), 0, w, h, cc(c)); }
 void Gfx::rectGrad(float x, float y, float w, float h, Color t, Color b, float d) {
 	C2D_DrawRectangle(px(x, d), py(y), 0, w, h, cc(t), cc(t), cc(b), cc(b));

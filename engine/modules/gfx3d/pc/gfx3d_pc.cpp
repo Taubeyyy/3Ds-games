@@ -73,7 +73,7 @@ void begin(Gfx &g, const Camera3D &cam, const Scene3D &scene) {
 }
 
 struct SV { float x, y, z, iw, u, v, r, g, b, a, fog; };
-static void rasterTri(const SV &a, const SV &b, const SV &c, const PcTex *tex, const float fogc[3]) {
+static void rasterTri(const SV &a, const SV &b, const SV &c, const PcTex *tex, const float fogc[3], bool add) {
 	float minx = fmaxf(0, floorf(fminf(a.x, fminf(b.x, c.x)))), maxx = fminf(g_w - 1, ceilf(fmaxf(a.x, fmaxf(b.x, c.x))));
 	float miny = fmaxf(0, floorf(fminf(a.y, fminf(b.y, c.y)))), maxy = fminf(g_h - 1, ceilf(fmaxf(a.y, fmaxf(b.y, c.y))));
 	float area = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
@@ -102,8 +102,9 @@ static void rasterTri(const SV &a, const SV &b, const SV &c, const PcTex *tex, c
 			float fog = P(a.fog, b.fog, c.fog);
 			r = r * (1 - fog) + fogc[0] * fog; gg = gg * (1 - fog) + fogc[1] * fog; bb = bb * (1 - fog) + fogc[2] * fog;
 			if (al < 0.01f) continue;
-			if (al > 0.99f) d = z;
 			float *p = g_fb[size_t(j) * g_w + i];
+			if (add) { p[0] = fminf(1, p[0] + r * al); p[1] = fminf(1, p[1] + gg * al); p[2] = fminf(1, p[2] + bb * al); continue; }
+			if (al > 0.99f) d = z;
 			p[0] += (fminf(r, 1) - p[0]) * al; p[1] += (fminf(gg, 1) - p[1]) * al; p[2] += (fminf(bb, 1) - p[2]) * al;
 		}
 }
@@ -160,7 +161,7 @@ void draw(const Mesh &m, const Mat4 &model, const Material &mat) {
 	for (int i = 0; i + 2 < m.ni; i += 3) {
 		const SV &a = sv[m.idx[i]], &b = sv[m.idx[i + 1]], &c = sv[m.idx[i + 2]];
 		if (a.iw < 0 || b.iw < 0 || c.iw < 0) continue; // einfaches Near-Clipping
-		rasterTri(a, b, c, tex, fogc);
+		rasterTri(a, b, c, tex, fogc, mat.additive);
 	}
 }
 
