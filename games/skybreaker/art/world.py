@@ -145,13 +145,16 @@ def dummy():
     return base.vary(0.06, 61), top.vary(0.06, 62)
 
 
-def arena(R=4.7):
+def arena(R=4.7, dark=False):
     import random
     rnd = random.Random(8)
     m = Mesh()
     glow = Mesh()
     TILE = [rgb(0x9A90A8), rgb(0x887E96), rgb(0xA89EB2), rgb(0x7C7288), rgb(0x948A9C)]
     MOSS = rgb(0x7A9A6A)
+    if dark:
+        TILE = [rgb(0x6E6670), rgb(0x5E5862), rgb(0x76706E), rgb(0x56505A), rgb(0x68625E)]
+        MOSS = rgb(0x4E6A3E)
     rings = [(0.95, 1.9, 9), (1.9, 2.85, 15), (2.85, 3.8, 21), (3.8, R, 27)]
     for r0, r1, n in rings:
         off = rnd.uniform(0, 1)
@@ -231,6 +234,61 @@ def brazier():
     return m.vary(0.06, 71), fire
 
 
+def dungeon_wall(R=5.25):
+    """Rundsaal: hohe Wand hinten, niedrige Brüstung vorne (Kamera), Strebepfeiler, Wandfackeln"""
+    import random
+    rnd = random.Random(21)
+    m = Mesh()
+    fl = Mesh()
+    STONE = [rgb(0x5A5460), rgb(0x4E4856), rgb(0x625C66), rgb(0x48424E)]
+    seg = 28
+    for k in range(seg):
+        a0, a1 = 2 * PI * k / seg, 2 * PI * (k + 1) / seg
+        am = (a0 + a1) / 2
+        front = math.cos(am) > 0.35          # Richtung +z = Kamera
+        h = 0.55 if front else 3.4
+        rows = 2 if front else 7
+        for r in range(rows):
+            y0, y1 = h * r / rows, h * (r + 1) / rows
+            off = (r % 2) * 0.5
+            b0, b1 = a0 + (a1 - a0) * off * 0.0, a1
+            col = rnd.choice(STONE)
+            p = [(math.sin(a0) * R, math.cos(a0) * R), (math.sin(a1) * R, math.cos(a1) * R)]
+            q = [(math.sin(a0) * (R + 0.5), math.cos(a0) * (R + 0.5)), (math.sin(a1) * (R + 0.5), math.cos(a1) * (R + 0.5))]
+            inset = 0.02 if (r + k) % 2 else 0
+            m.quad((p[1][0], y0, p[1][1]), (p[0][0], y0, p[0][1]), (p[0][0], y1 - inset, p[0][1]), (p[1][0], y1 - inset, p[1][1]), col)
+            if r == rows - 1:
+                m.quad((p[1][0], y1, p[1][1]), (p[0][0], y1, p[0][1]), (q[0][0], y1, q[0][1]), (q[1][0], y1, q[1][1]), shade(col, 1.1))
+        if not front and k % 3 == 0:                                       # Strebepfeiler + Fackel
+            x, z = math.sin(a0) * (R - 0.12), math.cos(a0) * (R - 0.12)
+            m += box(0.5, 3.6, 0.36, rgb(0x6A6470), top=0.85).ry(a0).move(x, 0, z)
+            tx, tz = math.sin(a0) * (R - 0.42), math.cos(a0) * (R - 0.42)
+            m += box(0.08, 0.32, 0.08, rgb(0x3A3038)).move(tx, 1.75, tz)
+            m += lathe([(0.04, 2.05), (0.11, 2.14), (0.12, 2.2)], 6, rgb(0x2E2830), cap_top=False).move(tx, 0, tz)
+            for i in range(5):
+                aa = 2 * PI * i / 5
+                f = slab([(-0.05, 0), (0.0, 0.26 + 0.06 * (i % 2)), (0.05, 0)], 0.03, rgb(0xFF5A1E))
+                f = f.recolor(lambda c, pp: mix(rgb(0xFF5A1E), rgb(0xFFE070), max(0, min(1, pp[1] / 0.3))))
+                fl += f.ry(aa).move(tx + math.sin(aa) * 0.05, 2.18, tz + math.cos(aa) * 0.05)
+        if not front and k % 3 == 1 and rnd.random() < 0.7:               # Kette / Fass / Knochen
+            x, z = math.sin(am) * (R - 0.35), math.cos(am) * (R - 0.35)
+            if rnd.random() < 0.5:
+                m += lathe([(0.16, 0), (0.2, 0.25), (0.16, 0.5)], 7, rgb(0x6A4A2E)).move(x, 0, z)
+                m += lathe([(0.205, 0.12), (0.205, 0.15)], 7, rgb(0x3A3A40), cap_bottom=False, cap_top=False).move(x, 0, z)
+            else:
+                for i in range(4):
+                    m += tube([(0, 0, 0), (0.18, 0.02, 0.05)], [0.02, 0.02], 4, rgb(0xD8D0B8)).ry(rnd.uniform(0, 6)).move(x + rnd.uniform(-0.2, 0.2), 0.02, z + rnd.uniform(-0.2, 0.2))
+                m += sphere(0.07, 6, 4, rgb(0xE0D8C0)).move(x, 0.07, z)
+    # Bogen-Nischen oben (Gewölbe-Andeutung)
+    for k in range(0, seg, 4):
+        am = 2 * PI * (k + 1.5) / seg
+        if math.cos(am) > 0.2:
+            continue
+        x, z = math.sin(am) * (R - 0.02), math.cos(am) * (R - 0.02)
+        m += slab([(-0.35, 0), (0.35, 0), (0.35, 0.9), (0.25, 1.2), (0, 1.32), (-0.25, 1.2), (-0.35, 0.9)], 0.04, rgb(0x241E2A)).ry(am).move(x, 1.0, z)
+    return m.vary(0.06, 22), fl
+
+
 def build(out):
     isl = island()
     for i, (x, z) in enumerate([(-1.4, 0.6), (-0.6, 1.5), (1.2, 1.2), (1.7, -0.5), (0.4, -1.3), (-1.6, -0.8)]):
@@ -248,6 +306,8 @@ def build(out):
     parts["tower_crystals"] = tc
     parts["dummy_base"], parts["dummy_top"] = dummy()
     parts["arena"], parts["arena_glow"] = arena()
+    parts["arena_dark"], _ = arena(dark=True)
+    parts["dwall"], parts["dwall_fire"] = dungeon_wall()
     parts["brazier"], parts["brazier_fire"] = brazier()
     parts["island_plain"] = island(r=2.7, depth=3.4, seg=16, seed=12)
     p, runes = pedestal()

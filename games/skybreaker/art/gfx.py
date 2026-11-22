@@ -116,7 +116,7 @@ def sky():
 def bottom_bg():
     W, H = 320, 240
     im = Image.new("RGBA", (W, H))
-    im.paste(vgrad(W, H, [(0, (14, 16, 44, 255)), (0.6, (24, 18, 54, 255)), (1, (40, 22, 60, 255))]))
+    im.paste(vgrad(W, H, [(0, (10, 8, 20, 255)), (0.6, (18, 14, 30, 255)), (1, (26, 18, 34, 255))]))
     r = random.Random(7)
     d = ImageDraw.Draw(im)
     for _ in range(80):
@@ -127,11 +127,17 @@ def bottom_bg():
     sil = Image.new("L", (W, H), 0)
     sd = ImageDraw.Draw(sil)
     cx = 250
-    sd.polygon([(cx - 26, H), (cx - 13, 60), (cx - 9, 40), (cx - 4, 52), (cx + 2, 34), (cx + 7, 48), (cx + 11, 44), (cx + 26, H)], fill=255)
-    for k in range(5):
-        sd.ellipse([cx - 4 + (k - 2) * 12, 18 + k * 5 % 11, cx + 2 + (k - 2) * 12, 23 + k * 5 % 11], fill=255)
-    im.alpha_composite(blur_glow(sil, 6, (90, 120, 255, 90)))
-    im.alpha_composite(tint(sil, (10, 10, 28, 235)))
+    sd.rectangle([cx - 46, 70, cx + 46, H], fill=255)
+    sd.pieslice([cx - 46, 24, cx + 46, 116], 180, 360, fill=255)
+    gate = Image.new("L", (W, H), 0)
+    gd = ImageDraw.Draw(gate)
+    gd.rectangle([cx - 30, 80, cx + 30, H], fill=255)
+    gd.pieslice([cx - 30, 50, cx + 30, 110], 180, 360, fill=255)
+    im.alpha_composite(blur_glow(gate, 14, (90, 200, 255, 120)))
+    im.alpha_composite(tint(sil, (12, 10, 22, 235)))
+    im.alpha_composite(tint(gate, (40, 110, 150, 200)))
+    for y in range(90, H, 18):
+        d.line([(0, y), (W, y)], fill=(30, 26, 44, 120), width=1)
     # Vignette
     v = Image.new("L", (W, H), 0)
     ImageDraw.Draw(v).rectangle([0, 0, W, H], fill=255)
@@ -424,7 +430,7 @@ ICONS = ["coin", "heart", "anvil", "gem", "chest", "shop", "fountain", "event", 
 def build():
     ui = []
     ui.append(save(logo(), "logo"))                                   # 0
-    ui.append(save(subtitle("DER ZERBROCHENE HIMMEL"), "subtitle"))     # 1
+    ui.append(save(subtitle("DER HIMMEL FIEL IN DIE TIEFE"), "subtitle"))     # 1
     for key, name, col in CHARS:                                       # 2..9
         ui.append(save(sigil(key, col), "sigil_" + key))
     for key, name, col in CHARS:                                       # 10..17

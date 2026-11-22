@@ -67,11 +67,14 @@
 #include "r_shrine_fmesh.h"
 #include "r_water_fmesh.h"
 #include "w_arena_fmesh.h"
+#include "w_arena_dark_fmesh.h"
 #include "w_arena_glow_fmesh.h"
 #include "w_brazier_fmesh.h"
 #include "w_brazier_fire_fmesh.h"
 #include "w_dummy_base_fmesh.h"
 #include "w_dummy_top_fmesh.h"
+#include "w_dwall_fmesh.h"
+#include "w_dwall_fire_fmesh.h"
 #include "w_island_fmesh.h"
 #include "w_island_plain_fmesh.h"
 #include "w_pedestal_fmesh.h"
@@ -129,7 +132,7 @@ static const PartSrc PART_SRC[] = {
 	{7, PK_WEAPON_GLOW, sylv_weapon_glow_fmesh, sylv_weapon_glow_fmesh_size},
 	{7, PK_PET, sylv_pet_fmesh, sylv_pet_fmesh_size},
 };
-enum WorldMesh { WM_E_BOMBER_BODY, WM_E_BOMBER_GLOW, WM_E_BRUTE_BODY, WM_E_BRUTE_GLOW, WM_E_CRAWLER_BODY, WM_E_CRAWLER_GLOW, WM_E_SHARD_BODY, WM_E_SHARD_GLOW, WM_E_WISP_BODY, WM_E_WISP_GLOW, WM_R_ANVIL, WM_R_CHEST, WM_R_COINS, WM_R_COLUMN, WM_R_DOOR, WM_R_FOUNTAIN, WM_R_GEM, WM_R_HEART, WM_R_PORTAL, WM_R_ROCK, WM_R_SHRINE, WM_R_WATER, WM_ARENA, WM_ARENA_GLOW, WM_BRAZIER, WM_BRAZIER_FIRE, WM_DUMMY_BASE, WM_DUMMY_TOP, WM_ISLAND, WM_ISLAND_PLAIN, WM_PEDESTAL, WM_PEDESTAL_GLOW, WM_SHARD_A, WM_SHARD_B, WM_SHARD_C, WM_TOWER, WM_TOWER_CRYSTALS, WM_TOWER_GLOW, WM_COUNT };
+enum WorldMesh { WM_E_BOMBER_BODY, WM_E_BOMBER_GLOW, WM_E_BRUTE_BODY, WM_E_BRUTE_GLOW, WM_E_CRAWLER_BODY, WM_E_CRAWLER_GLOW, WM_E_SHARD_BODY, WM_E_SHARD_GLOW, WM_E_WISP_BODY, WM_E_WISP_GLOW, WM_R_ANVIL, WM_R_CHEST, WM_R_COINS, WM_R_COLUMN, WM_R_DOOR, WM_R_FOUNTAIN, WM_R_GEM, WM_R_HEART, WM_R_PORTAL, WM_R_ROCK, WM_R_SHRINE, WM_R_WATER, WM_ARENA, WM_ARENA_DARK, WM_ARENA_GLOW, WM_BRAZIER, WM_BRAZIER_FIRE, WM_DUMMY_BASE, WM_DUMMY_TOP, WM_DWALL, WM_DWALL_FIRE, WM_ISLAND, WM_ISLAND_PLAIN, WM_PEDESTAL, WM_PEDESTAL_GLOW, WM_SHARD_A, WM_SHARD_B, WM_SHARD_C, WM_TOWER, WM_TOWER_CRYSTALS, WM_TOWER_GLOW, WM_COUNT };
 static const PartSrc WORLD_SRC[] = {
 	{0, 0, e_bomber_body_fmesh, e_bomber_body_fmesh_size},
 	{1, 0, e_bomber_glow_fmesh, e_bomber_glow_fmesh_size},
@@ -154,19 +157,22 @@ static const PartSrc WORLD_SRC[] = {
 	{20, 0, r_shrine_fmesh, r_shrine_fmesh_size},
 	{21, 0, r_water_fmesh, r_water_fmesh_size},
 	{22, 0, w_arena_fmesh, w_arena_fmesh_size},
-	{23, 0, w_arena_glow_fmesh, w_arena_glow_fmesh_size},
-	{24, 0, w_brazier_fmesh, w_brazier_fmesh_size},
-	{25, 0, w_brazier_fire_fmesh, w_brazier_fire_fmesh_size},
-	{26, 0, w_dummy_base_fmesh, w_dummy_base_fmesh_size},
-	{27, 0, w_dummy_top_fmesh, w_dummy_top_fmesh_size},
-	{28, 0, w_island_fmesh, w_island_fmesh_size},
-	{29, 0, w_island_plain_fmesh, w_island_plain_fmesh_size},
-	{30, 0, w_pedestal_fmesh, w_pedestal_fmesh_size},
-	{31, 0, w_pedestal_glow_fmesh, w_pedestal_glow_fmesh_size},
-	{32, 0, w_shard_a_fmesh, w_shard_a_fmesh_size},
-	{33, 0, w_shard_b_fmesh, w_shard_b_fmesh_size},
-	{34, 0, w_shard_c_fmesh, w_shard_c_fmesh_size},
-	{35, 0, w_tower_fmesh, w_tower_fmesh_size},
-	{36, 0, w_tower_crystals_fmesh, w_tower_crystals_fmesh_size},
-	{37, 0, w_tower_glow_fmesh, w_tower_glow_fmesh_size},
+	{23, 0, w_arena_dark_fmesh, w_arena_dark_fmesh_size},
+	{24, 0, w_arena_glow_fmesh, w_arena_glow_fmesh_size},
+	{25, 0, w_brazier_fmesh, w_brazier_fmesh_size},
+	{26, 0, w_brazier_fire_fmesh, w_brazier_fire_fmesh_size},
+	{27, 0, w_dummy_base_fmesh, w_dummy_base_fmesh_size},
+	{28, 0, w_dummy_top_fmesh, w_dummy_top_fmesh_size},
+	{29, 0, w_dwall_fmesh, w_dwall_fmesh_size},
+	{30, 0, w_dwall_fire_fmesh, w_dwall_fire_fmesh_size},
+	{31, 0, w_island_fmesh, w_island_fmesh_size},
+	{32, 0, w_island_plain_fmesh, w_island_plain_fmesh_size},
+	{33, 0, w_pedestal_fmesh, w_pedestal_fmesh_size},
+	{34, 0, w_pedestal_glow_fmesh, w_pedestal_glow_fmesh_size},
+	{35, 0, w_shard_a_fmesh, w_shard_a_fmesh_size},
+	{36, 0, w_shard_b_fmesh, w_shard_b_fmesh_size},
+	{37, 0, w_shard_c_fmesh, w_shard_c_fmesh_size},
+	{38, 0, w_tower_fmesh, w_tower_fmesh_size},
+	{39, 0, w_tower_crystals_fmesh, w_tower_crystals_fmesh_size},
+	{40, 0, w_tower_glow_fmesh, w_tower_glow_fmesh_size},
 };

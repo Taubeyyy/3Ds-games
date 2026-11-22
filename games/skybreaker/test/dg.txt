@@ -1,0 +1,8 @@
+70 shot d_title
+80 tap 160 120
+110 shot d_menu
+120 tap 160 50
+400 shot d_run1
+700 shot d_run2
+1100 shot d_run3
+1200 quit

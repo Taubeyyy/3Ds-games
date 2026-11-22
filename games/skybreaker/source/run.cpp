@@ -4,7 +4,7 @@
 enum RunState { RS_ENTER, RS_FIGHT, RS_CLEARED, RS_CHOICE, RS_DOORS, RS_DEAD, RS_WIN };
 enum Choice { CK_NONE, CK_BOON, CK_ANVIL, CK_SHOP, CK_EVENT };
 static const int LAST_ROOM = 12;
-static const char *ROOM_NAME[RT_COUNT] = {"Kampf", "Elite", "Schatzkammer", "Händler", "Sternenquelle", "Ereignis", "Prüfung", "Wächter des Turms"};
+static const char *ROOM_NAME[RT_COUNT] = {"Kampf", "Elite", "Schatzkammer", "Händler", "Sternenquelle", "Ereignis", "Prüfung", "Wächter der Tiefe"};
 static const char *MOD_NAME[RM_COUNT] = {"", "Eile: Gegner schneller", "Glas: alle nehmen 50% mehr Schaden", "Schwarm: viele Krabbler", "Sternregen: Meteore!"};
 
 struct ShopItem { int kind, price; bool sold; Offer o; };
@@ -534,7 +534,7 @@ void runDraw(Gfx &g) {
 		if (k > 0) g.rrect(9, 9, 102 * k, 8, 3, Color(0xFF6A7A), Color(0xC8283A), -2);
 		for (const Enemy &e : AR.enemies)
 			if (e.alive && e.type == EN_BOSS) {
-				g.text(200, 204, 0.42f, Color(0xFF9A7A), "Wächter des Turms", ALIGN_CENTER, 0, true, -2);
+				g.text(200, 204, 0.42f, Color(0xFF9A7A), "Wächter der Tiefe", ALIGN_CENTER, 0, true, -2);
 				g.rrect(60, 222, 280, 10, 4, Color(0x000000, 0.7f), Color(0x000000, 0.7f), -2);
 				g.rrect(61, 223, 278 * clampf(e.hp / e.maxHp, 0, 1), 8, 3, Color(0xFF5A3A), Color(0xA0201A), -2);
 			}
@@ -549,8 +549,8 @@ void runDraw(Gfx &g) {
 		if (R.state == RS_DEAD || R.state == RS_WIN) {
 			float a = clampf(R.st * 1.5f, 0, 1);
 			g.rect(0, 0, 400, 240, Color(0x000000, 0.55f * a), -2);
-			g.text(200, 80, 1.0f, R.state == RS_WIN ? Color(0xFFE08A, a) : Color(0xFF8A8A, a), R.state == RS_WIN ? "Der Turm erzittert!" : "Gefallen", ALIGN_CENTER, 0, true, -3);
-			g.text(200, 120, 0.45f, Color(0xFFFFFF, a), R.state == RS_WIN ? "Du hast den Wächter besiegt." : "Die Sterne tragen dich zurück ins Lager.", ALIGN_CENTER, 0, true, -3);
+			g.text(200, 80, 1.0f, R.state == RS_WIN ? Color(0xFFE08A, a) : Color(0xFF8A8A, a), R.state == RS_WIN ? "Die Tiefe erbebt!" : "Gefallen", ALIGN_CENTER, 0, true, -3);
+			g.text(200, 120, 0.45f, Color(0xFFFFFF, a), R.state == RS_WIN ? "Du hast den Wächter besiegt." : "Die Sterne tragen dich zurück an die Oberfläche.", ALIGN_CENTER, 0, true, -3);
 		}
 		if (R.clearT < 1.6f && R.state != RS_WIN) {
 			float k = R.clearT;
@@ -562,8 +562,8 @@ void runDraw(Gfx &g) {
 		if (R.roomType == RT_BOSS && R.bannerT < 2.6f) {
 			float a = R.bannerT < 0.3f ? R.bannerT / 0.3f : R.bannerT > 2.0f ? (2.6f - R.bannerT) / 0.6f : 1;
 			g.rect(0, 92, 400, 54, Color(0x200008, 0.7f * a), -2);
-			g.text(200, 98, 0.9f, Color(0xFF8A6A, a), "WÄCHTER DES TURMS", ALIGN_CENTER, 0, true, -3);
-			g.text(200, 128, 0.36f, Color(0xFFD8C8, a), "Der letzte Hüter vor dem zerbrochenen Himmel", ALIGN_CENTER, 0, true, -3);
+			g.text(200, 98, 0.9f, Color(0xFF8A6A, a), "WÄCHTER DER TIEFE", ALIGN_CENTER, 0, true, -3);
+			g.text(200, 128, 0.36f, Color(0xFFD8C8, a), "Er bewacht den letzten Splitter des Himmels", ALIGN_CENTER, 0, true, -3);
 		}
 		float fa = R.transT > 0 ? 1 - R.transT / 0.35f : R.fadeIn;
 		if (fa > 0) g.rect(0, 0, 400, 240, Color(0x06040E, clampf(fa, 0, 1)), -4);

@@ -1,4 +1,5 @@
 // SKYBREAKER - Hauptprogramm: Titelbild, Hauptmenü, Pantheon (Figuren-Galerie), Optionen
+#include <initializer_list>
 #include "meta.hpp"
 
 float g_time = 0;
@@ -61,77 +62,74 @@ void titleUpdate(float dt, const Input &in) {
 	}
 }
 
-// Oberer Bildschirm: Himmel, Turm, Insel, Seren, Logo
-static const Vec3 SHARDS[] = {Vec3(-7, -1.5f, -9), Vec3(6.5f, 1.2f, -13), Vec3(-14, 3.5f, -26), Vec3(10, -3, -6), Vec3(-4, 5, -30), Vec3(16, 6, -40)};
-
+// Oberer Bildschirm: Dungeon-Halle mit Himmelstor, Seren, Logo
 void titleDrawTop(Gfx &g, float logoA) {
 	float t = g_time;
-	g.imageAt(A.bg[BG_SKY], 0, 0, 1, 1, Color(0xFFFFFF), 0, 10.5f);
-	g.imageAt(A.bg[BG_CRACK], 0, 0, 1, 1, Color(0xFFFFFF, 0.25f + 0.25f * sinf(t * 1.3f)), 0, 10.5f);
-	for (int i = 0; i < 3; i++) {                                   // ferne Wolken
-		float x = fmodf(i * 170 + t * (4 + i * 2), 560) - 80;
-		g.image(A.ui[UI_CLOUD0 + i], x, 168 + i * 14, 1.4f, 1.0f, 0, Color(0xFFD8E8, 0.45f), 0, 8 - i);
-	}
-	g.image(A.ui[UI_P_GLOW], 345, 205, 5, 3, 0, Color(0xFFB070, 0.35f), 1, 10);   // Sonnenglühen
-	// --- 3D
+	g.rectGrad(0, 0, 400, 240, Color(0x040308), Color(0x0E0A16), 10.5f);
 	Camera3D &cam = g_titleCam;
-	cam.target = Vec3(-1.4f, 2.0f, -1.0f);
-	cam.eye = Vec3(2.55f + sinf(t * 0.21f) * 0.22f, 1.0f + sinf(t * 0.27f) * 0.08f, 5.0f);
+	cam.target = Vec3(-0.9f + sinf(t * 0.17f) * 0.1f, 1.85f, -1.4f);
+	cam.eye = Vec3(2.6f + sinf(t * 0.21f) * 0.2f, 1.2f + sinf(t * 0.27f) * 0.07f, 4.3f);
 	cam.fov = 45;
-	cam.focus = 5.0f;
-	cam.zfar = 400;
+	cam.focus = 4.4f;
+	cam.zfar = 60;
+	const Vec3 gate(-1.1f, 0.075f, -4.35f), b1(-3.0f, 0.07f, -3.4f), b2(0.9f, 0.07f, -3.8f), hero(0.55f, 0.075f, 0.9f);
 	Scene3D sc;
-	sc.ambient = Color(0x3E3860);
-	sc.nLights = 0;
-	Light3D sun;
-	sun.pos = Vec3(0.55f, 0.35f, -0.9f); sun.color = Color(0xFFB27A); sun.intensity = 1.05f;
-	sc.lights[sc.nLights++] = sun;
-	Light3D fill;
-	fill.pos = Vec3(-0.6f, 0.55f, 0.75f); fill.color = Color(0x7080D8); fill.intensity = 0.6f;
-	sc.lights[sc.nLights++] = fill;
-	Light3D star;
-	star.point = true; star.pos = Vec3(0.45f, 1.25f, 0.55f); star.color = Color(0x8AF0FF); star.intensity = 0.7f + 0.2f * sinf(t * 2.4f); star.range = 1.8f;
+	sc.ambient = Color(0x342E42);
+	Light3D key; key.pos = Vec3(0.4f, 0.8f, 0.7f); key.color = Color(0x9890C0); key.intensity = 0.4f;
+	sc.lights[sc.nLights++] = key;
+	Light3D gl; gl.point = true; gl.pos = gate + Vec3(0, 1.6f, 0.6f); gl.color = Color(0x7ADCFF); gl.intensity = 1.6f + 0.25f * sinf(t * 1.3f); gl.range = 8;
+	sc.lights[sc.nLights++] = gl;
+	for (Vec3 b : {b1, b2}) { Light3D f; f.point = true; f.pos = b + Vec3(0, 1.4f, 0); f.color = Color(0xFF9A4A); f.intensity = 1.3f + 0.15f * sinf(t * 11 + b.x); f.range = 4.5f; sc.lights[sc.nLights++] = f; }
+	Light3D star; star.point = true; star.pos = hero + Vec3(0.1f, 1.25f, 0.2f); star.color = Color(0x8AF0FF); star.intensity = 0.7f + 0.2f * sinf(t * 2.4f); star.range = 1.8f;
 	sc.lights[sc.nLights++] = star;
 	sc.fog = true;
-	sc.fogColor = Color(0x8A5A98);
-	sc.fogNear = 45; sc.fogFar = 260;
+	sc.fogColor = Color(0x07050C);
+	sc.fogNear = 7; sc.fogFar = 20;
 	gfx3d::begin(g, cam, sc);
 	Material lit;
-	lit.specular = 0.1f;
+	lit.specular = 0.2f;
 	Material glow;
 	glow.lit = false;
-	Mat4 tower = Mat4::translate(Vec3(-120, -42, -150)) * Mat4::scale(Vec3(1.7f, 1.7f, 1.7f));
-	gfx3d::draw(A.world[WM_TOWER], tower, lit);
-	gfx3d::draw(A.world[WM_TOWER_GLOW], tower, glow);
-	gfx3d::draw(A.world[WM_TOWER_CRYSTALS], tower * Mat4::rotY(t * 0.15f), glow);
-	for (int i = 0; i < 6; i++) {
-		Vec3 p = SHARDS[i] + Vec3(0, sinf(t * 0.6f + i) * 0.25f, 0);
-		gfx3d::draw(A.world[WM_SHARD_A + i % 3], Mat4::translate(p) * Mat4::rotY(t * 0.05f * (i % 2 ? 1 : -1) + i), lit);
+	gfx3d::draw(A.world[WM_ARENA_DARK], Mat4::identity(), lit);
+	Material ag = glow; ag.color = Color(0xFFFFFF).mix(Color(0x8AF0FF), 0.5f + 0.5f * sinf(t * 1.5f));
+	gfx3d::draw(A.world[WM_ARENA_GLOW], Mat4::identity(), ag);
+	gfx3d::draw(A.world[WM_DWALL], Mat4::identity(), lit);
+	float fl = 1 + 0.07f * sinf(t * 14) + 0.04f * sinf(t * 31);
+	gfx3d::draw(A.world[WM_DWALL_FIRE], Mat4::translate(Vec3(0, 2.18f, 0)) * Mat4::scale(Vec3(1, fl, 1)) * Mat4::translate(Vec3(0, -2.18f, 0)), glow);
+	Mat4 gm = Mat4::translate(gate) * Mat4::scale(Vec3(1.45f, 1.45f, 1.45f));
+	gfx3d::draw(A.world[WM_R_DOOR], gm, lit);
+	Material pm = glow; pm.color = Color(0x8AE8FF, 0.75f + 0.15f * sinf(t * 1.3f));
+	gfx3d::draw(A.world[WM_R_PORTAL], gm, pm);
+	for (Vec3 b : {b1, b2}) {
+		gfx3d::draw(A.world[WM_BRAZIER], Mat4::translate(b), lit);
+		gfx3d::draw(A.world[WM_BRAZIER_FIRE], Mat4::translate(b + Vec3(0, 1.1f, 0)) * Mat4::scale(Vec3(1, fl, 1)) * Mat4::translate(Vec3(0, -1.1f, 0)), glow);
 	}
-	gfx3d::draw(A.world[WM_ISLAND], Mat4::identity(), lit);
+	Material sg = glow; sg.color = Color(0xB0F4FF);
+	for (int i = 0; i < 5; i++) {                                   // schwebende Himmelssplitter vor dem Tor
+		float a = t * 0.5f + i * 1.25f;
+		Vec3 p = gate + Vec3(cosf(a) * 1.3f, 1.8f + sinf(a * 1.7f) * 0.5f + i * 0.15f, 0.7f + sinf(a) * 0.4f);
+		gfx3d::draw(A.shard, Mat4::translate(p) * Mat4::rotY(a * 2) * Mat4::scale(Vec3(0.9f, 1.6f, 0.9f)), sg);
+	}
 	Pose pose;
-	pose.capeLift = 0.12f + 0.08f * sinf(t * 0.9f);
-	drawChar(CH_SEREN, Mat4::translate(Vec3(0.3f, 0.02f, 0.35f)) * Mat4::rotY(-0.55f), t, &pose);
+	pose.capeLift = 0.1f + 0.06f * sinf(t * 0.9f);
+	Mat4 hx = Mat4::translate(hero) * Mat4::rotY(-0.45f);
+	drawChar(CH_SEREN, hx, t, &pose);
 	gfx3d::end(g);
-	// Leuchten über 3D
 	Vec2 s;
 	float dep;
-	if (gfx3d::project(g, cam, (Mat4::translate(Vec3(0.3f, 0.02f, 0.35f)) * Mat4::rotY(-0.55f)).point(Vec3(0.07f, 1.2f, 0.16f)), &s, &dep)) g.image(A.ui[UI_P_GLOW], s.x, s.y, 0.55f + 0.1f * sinf(t * 2.4f), 0.55f, 0, Color(0x8AF0FF, 0.7f), 1, dep);
-	Vec3 crystal = tower.point(Vec3(0, 37.8f + 6.5f, 0));
-	if (gfx3d::project(g, cam, crystal, &s, &dep)) g.image(A.ui[UI_P_GLOW], s.x, s.y, 1.6f, 1.6f, 0, Color(0x9AF4FF, 0.5f + 0.2f * sinf(t * 1.7f)), 1, dep);
-	for (const Mote &m : g_motes) {                                 // schwebende Lichtfunken
-		float a = 0.35f + 0.35f * sinf(t * 2 + m.ph);
-		g.image(A.ui[UI_P_EMBER], m.x, m.y, m.s * 6, m.s * 6, 0, Color(m.d > 3 ? 0xFFD8A0 : 0x9AF0FF, a), 1, m.d);
-	}
-	for (int i = 0; i < 2; i++) {                                   // nahe Wolken
-		float x = fmodf(i * 260 + t * 14, 700) - 150;
-		g.image(A.ui[UI_CLOUD1 + i], x, 228 - i * 6, 2.2f, 1.2f, 0, Color(0xFFE0F0, 0.28f), 0, -2);
+	if (gfx3d::project(g, cam, gate + Vec3(0, 1.7f, 0.3f), &s, &dep)) g.image(A.ui[UI_P_GLOW], s.x, s.y, 3.2f, 3.6f, 0, Color(0x7ADCFF, 0.3f + 0.08f * sinf(t * 1.3f)), 1, dep);
+	for (Vec3 b : {b1, b2})
+		if (gfx3d::project(g, cam, b + Vec3(0, 1.3f, 0), &s, &dep)) g.image(A.ui[UI_P_GLOW], s.x, s.y, 1.3f, 1.3f, 0, Color(0xFF9A4A, 0.5f + 0.1f * sinf(t * 11)), 1, dep);
+	if (gfx3d::project(g, cam, hx.point(Vec3(0.07f, 1.2f, 0.16f)), &s, &dep)) g.image(A.ui[UI_P_GLOW], s.x, s.y, 0.55f + 0.1f * sinf(t * 2.4f), 0.55f, 0, Color(0x8AF0FF, 0.7f), 1, dep);
+	for (const Mote &m : g_motes) {                                 // Staub und Glut in der Luft
+		float a = 0.25f + 0.3f * sinf(t * 2 + m.ph);
+		g.image(A.ui[UI_P_EMBER], m.x, m.y, m.s * 5, m.s * 5, 0, Color(m.d > 3 ? 0xFFB070 : 0x9AE8FF, a), 1, m.d);
 	}
 	// Logo
 	if (logoA > 0) {
 		float k = 0.92f + 0.08f * fminf(1, logoA);
 		const Image &lg = A.ui[UI_LOGO];
-		g.image(A.ui[UI_P_GLOW], 200, 52, 7, 2.2f, 0, Color(0x5AA0FF, 0.25f * logoA), 1, -1.5f);
+		g.image(A.ui[UI_P_GLOW], 200, 52, 7, 2.2f, 0, Color(0x3A70C0, 0.3f * logoA), 1, -1.5f);
 		g.image(lg, 200, 50, k, k, 0, Color(0xFFFFFF, logoA), 0, -2.5f);
 		g.image(A.ui[UI_SUBTITLE], 200, 50 + lg.height() * 0.5f + 10, 1, 1, 0, Color(0xFFFFFF, logoA * 0.95f), 0, -1.5f);
 	}
@@ -167,7 +165,7 @@ void titleDraw(Gfx &g) {
 		drawButton(g, 10 + i, 44, y, img, i == 0 ? "" : LBL[i], g_focus == i, 0, tc);
 		if (i == 0) {
 			g.text(160, y + 5, 0.58f, tc, LBL[0], ALIGN_CENTER);
-			g.text(160, y + 27, 0.32f, Color(0xE8C060, k * 0.9f), "Neuer Lauf durch den Himmelsturm", ALIGN_CENTER);
+			g.text(160, y + 27, 0.32f, Color(0xE8C060, k * 0.9f), "Neuer Abstieg in die Tiefe", ALIGN_CENTER);
 		}
 		if (i == 1 && PROF.splitter) { char b[16]; snprintf(b, sizeof b, "%u", unsigned(PROF.splitter)); g.image(A.ui[UI_ICON_GEM], 238, y + 18, 0.36f, 0.36f, 0, Color(0xFFFFFF, k)); g.text(248, y + 11, 0.34f, Color(0x8AF0FF, k), b, ALIGN_LEFT); }
 	}

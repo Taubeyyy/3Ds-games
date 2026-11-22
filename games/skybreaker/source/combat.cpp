@@ -133,7 +133,7 @@ void Arena::newRoom(int seed, bool keepHero) {
 			obst[nObst++] = {col ? WM_R_COLUMN : WM_R_ROCK, p, col ? 0.4f : 0.55f, r.range(0, 6.28f), r.range(0.9f, 1.15f), false};
 		}
 	}
-	static const u32 TINT[4] = {0xFFFFFF, 0xF0E8FF, 0xFFF0E0, 0xE8F4FF};
+	static const u32 TINT[4] = {0xFFFFFF, 0xE8E0F0, 0xF0E4D8, 0xDCE8E8};
 	floorTint = Color(TINT[seed & 3]);
 }
 
@@ -900,12 +900,7 @@ static void drawEnemy(const Enemy &e, float t) {
 
 void Arena::draw(Gfx &g) {
 	float t = time;
-	g.rectGrad(0, 0, 400, 120, Color(0x1A1440), Color(0x5A3478), 10.5f);
-	g.rectGrad(0, 120, 400, 120, Color(0x5A3478), Color(0xC8787A), 10.5f);
-	for (int i = 0; i < 3; i++) {
-		float x = fmodf(i * 170 + t * (5 + i * 3), 560) - 80;
-		g.image(A.ui[UI_CLOUD0 + i], x, 150 + i * 30, 2.0f, 1.4f, 0, Color(0xFFD8E8, 0.4f), 0, 9 - i);
-	}
+	g.rectGrad(0, 0, 400, 240, Color(0x040308), Color(0x100C18), 10.5f);
 	Hero &h = hero;
 	Vec3 sh;
 	if (g_shake > 0) sh = Vec3(g_r.range(-1, 1), g_r.range(-1, 1), g_r.range(-1, 1)) * (g_shake * 0.16f);
@@ -915,11 +910,22 @@ void Arena::draw(Gfx &g) {
 	cam.focus = (cam.eye - cam.target).len();
 	cam.zfar = 300;
 	Scene3D sc;
-	sc.ambient = Color(0x48446A);
-	Light3D sun; sun.pos = Vec3(0.5f, 0.9f, 0.35f); sun.color = Color(0xFFE6C8); sun.intensity = 0.85f;
-	Light3D rim; rim.pos = Vec3(-0.5f, 0.4f, -0.8f); rim.color = Color(0x8A70E0); rim.intensity = 0.55f;
+	sc.ambient = Color(0x3C3648);
+	Light3D sun; sun.pos = Vec3(0.3f, 1.0f, 0.5f); sun.color = Color(0xB8B0D8); sun.intensity = 0.42f;
 	sc.lights[sc.nLights++] = sun;
-	sc.lights[sc.nLights++] = rim;
+	{                                                                  // zwei nächste Wandfackeln
+		float best[2] = {1e9f, 1e9f};
+		Vec3 bp[2];
+		for (int k = 0; k < 28; k += 3) {
+			float a0 = 2 * PI * k / 28, am = 2 * PI * (k + 0.5f) / 28;
+			if (cosf(am) > 0.35f) continue;
+			Vec3 p(sinf(a0) * 4.83f, 2.3f, cosf(a0) * 4.83f);
+			float d = (p - h.pos).len();
+			if (d < best[0]) { best[1] = best[0]; bp[1] = bp[0]; best[0] = d; bp[0] = p; }
+			else if (d < best[1]) { best[1] = d; bp[1] = p; }
+		}
+		for (int i = 0; i < 2; i++) { Light3D l; l.point = true; l.pos = bp[i]; l.color = Color(0xFFA050); l.intensity = 1.2f + 0.12f * sinf(t * 11 + i * 3); l.range = 5.5f; sc.lights[sc.nLights++] = l; }
+	}
 	Light3D star; star.point = true; star.pos = h.pos + Vec3(0.1f, 1.25f, 0.2f); star.color = Color(0x8AF0FF); star.intensity = 0.6f; star.range = 1.6f;
 	sc.lights[sc.nLights++] = star;
 	for (int k = 0; k < nObst && sc.nLights < 6; k++)
@@ -927,20 +933,23 @@ void Arena::draw(Gfx &g) {
 	for (const HProj &p : g_hp)
 		if (p.life > 0 && sc.nLights < 8) { Light3D l; l.point = true; l.pos = p.p; l.color = Color(p.god >= 0 ? godColor(p.god) : 0x6AD8FF); l.intensity = 1.5f; l.range = 3; sc.lights[sc.nLights++] = l; }
 	sc.fog = true;
-	sc.fogColor = Color(0x6A5090);
-	sc.fogNear = 25; sc.fogFar = 120;
+	sc.fogColor = Color(0x08060E);
+	sc.fogNear = 9; sc.fogFar = 26;
 	gfx3d::begin(g, cam, sc);
 	Material lit;
 	lit.specular = 0.08f;
-	gfx3d::draw(A.world[WM_ISLAND_PLAIN], Mat4::translate(Vec3(0, -0.34f, 0)) * Mat4::scale(Vec3(2.6f, 1.7f, 2.6f)), lit);
 	Material al = lit;
-	al.specular = 0.25f;
+	al.specular = 0.3f;
 	al.color = floorTint;
-	gfx3d::draw(A.world[WM_ARENA], Mat4::identity(), al);
+	gfx3d::draw(A.world[WM_ARENA_DARK], Mat4::identity(), al);
+	gfx3d::draw(A.world[WM_DWALL], Mat4::identity(), lit);
+	{
+		Material wf; wf.lit = false;
+		float fl = 1 + 0.07f * sinf(t * 14) + 0.04f * sinf(t * 31);
+		gfx3d::draw(A.world[WM_DWALL_FIRE], Mat4::translate(Vec3(0, 2.18f, 0)) * Mat4::scale(Vec3(1, fl, 1)) * Mat4::translate(Vec3(0, -2.18f, 0)), wf);
+	}
 	Material ag; ag.lit = false; ag.color = Color(0xFFFFFF).mix(Color(0x8AF0FF), 0.5f + 0.5f * sinf(t * 1.5f));
 	gfx3d::draw(A.world[WM_ARENA_GLOW], Mat4::identity(), ag);
-	gfx3d::draw(A.world[WM_SHARD_B], Mat4::translate(Vec3(-9, -4 + sinf(t * 0.5f) * 0.3f, -6)), lit);
-	gfx3d::draw(A.world[WM_SHARD_A], Mat4::translate(Vec3(8, -6 + sinf(t * 0.4f + 1) * 0.3f, -3)) * Mat4::rotY(t * 0.05f), lit);
 	for (int k = 0; k < nObst; k++) {
 		const Obstacle &o = obst[k];
 		Mat4 bm = Mat4::translate(o.pos) * Mat4::rotY(o.yaw) * Mat4::scale(Vec3(o.scale, o.scale, o.scale));
@@ -1046,6 +1055,12 @@ void Arena::draw(Gfx &g) {
 	float dep, dep2;
 	for (int k = 0; k < nObst; k++)
 		if (obst[k].fire && gfx3d::project(g, cam, obst[k].pos + Vec3(0, 1.3f, 0), &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 1.1f, 1.1f, 0, Color(0xFF9A4A, 0.45f + 0.1f * sinf(t * 11)), 1, dep);
+	for (int k = 0; k < 28; k += 3) {
+		float a0 = 2 * PI * k / 28, am = 2 * PI * (k + 0.5f) / 28;
+		if (cosf(am) > 0.35f) continue;
+		if (gfx3d::project(g, cam, Vec3(sinf(a0) * 4.83f, 2.32f, cosf(a0) * 4.83f), &sp, &dep))
+			g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 0.8f, 0.8f, 0, Color(0xFFA050, 0.4f + 0.1f * sinf(t * 9 + k)), 1, dep);
+	}
 	for (const HProj &p : g_hp)
 		if (p.life > 0 && gfx3d::project(g, cam, p.p, &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 0.9f, 0.9f, 0, Color(p.god >= 0 ? godColor(p.god) : 0x6AD8FF, 0.7f), 1, dep);
 	for (const EProj &p : g_ep)
