@@ -71,16 +71,13 @@ struct Fx {
 };
 
 // ------------------------------------------------------------------ Szenen
-enum SceneId { SC_TITLE, SC_PANTHEON, SC_OPTIONS, SC_TRAINING };
+enum SceneId { SC_TITLE, SC_RUN, SC_TREE, SC_OPTIONS, SC_TRAINING };
 void gotoScene(int id);
 extern float g_time;
 
 void titleEnter();
 void titleUpdate(float dt, const Input &in);
 void titleDraw(Gfx &g);
-void pantheonEnter();
-void pantheonUpdate(float dt, const Input &in);
-void pantheonDraw(Gfx &g);
 void optionsEnter();
 void optionsUpdate(float dt, const Input &in);
 void optionsDraw(Gfx &g);

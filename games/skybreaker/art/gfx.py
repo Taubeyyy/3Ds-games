@@ -371,6 +371,56 @@ def lock_icon():
     return im
 
 
+def icon(kind):
+    k = 4
+    S = 40 * k
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    cols = {"coin": (255, 210, 90), "heart": (255, 90, 120), "anvil": (200, 200, 220), "gem": (138, 240, 255), "chest": (232, 170, 90),
+            "shop": (255, 210, 90), "fountain": (120, 220, 255), "event": (200, 150, 255), "challenge": (255, 120, 90), "elite": (255, 200, 80),
+            "boss": (255, 80, 80), "power": (130, 255, 150)}
+    col = cols[kind]
+    d = ImageDraw.Draw(im)
+    d.ellipse([2 * k, 2 * k, S - 2 * k, S - 2 * k], fill=(16, 14, 32, 235), outline=(232, 192, 96, 255), width=2 * k)
+    sym = Image.new("L", (S, S), 0)
+    sd = ImageDraw.Draw(sym)
+    c = S / 2
+    def P(pts): return [(c + x * k, c + y * k) for x, y in pts]
+    if kind == "coin":
+        sd.ellipse(P([(-10, -10), (10, 10)]), fill=255); sd.ellipse(P([(-6, -6), (6, 6)]), fill=0); sd.rectangle(P([(-1.5, -4), (1.5, 4)]), fill=255)
+    elif kind == "heart":
+        sd.ellipse(P([(-11, -9), (0, 2)]), fill=255); sd.ellipse(P([(0, -9), (11, 2)]), fill=255); sd.polygon(P([(-10.5, -2), (10.5, -2), (0, 11)]), fill=255)
+    elif kind == "anvil":
+        sd.polygon(P([(-12, -6), (8, -6), (13, -9), (13, -3), (5, 0), (3, 5), (8, 9), (-8, 9), (-3, 5), (-5, 0), (-12, -3)]), fill=255)
+    elif kind == "gem":
+        sd.polygon(P([(0, -12), (9, -3), (0, 12), (-9, -3)]), fill=255); sd.line(P([(-9, -3), (9, -3)]), fill=0, width=k)
+    elif kind == "chest":
+        sd.rectangle(P([(-11, -3), (11, 9)]), fill=255); sd.chord(P([(-11, -11), (11, 5)]), 180, 360, fill=255); sd.rectangle(P([(-2, 0), (2, 5)]), fill=0)
+    elif kind == "shop":
+        sd.ellipse(P([(-10, -4), (10, 12)]), fill=255); sd.rectangle(P([(-5, -10), (5, -3)]), fill=255); sd.rectangle(P([(-1, 0), (1, 8)]), fill=0)
+    elif kind == "fountain":
+        sd.polygon(P([(0, -12), (7, 0), (5, 7), (0, 10), (-5, 7), (-7, 0)]), fill=255)
+    elif kind == "event":
+        f = ImageFont.truetype(SERIF, 30 * k); sd.text((c, c + k), "?", font=f, fill=255, anchor="mm")
+    elif kind == "challenge":
+        for sx in (-1, 1):
+            sd.line(P([(-10 * sx, -10), (10 * sx, 10)]), fill=255, width=3 * k)
+            sd.line(P([(-7 * sx, 9), (-11 * sx, 5)]), fill=255, width=2 * k)
+    elif kind == "elite":
+        sd.polygon(P([(-11, 8), (-11, -6), (-5, 0), (0, -10), (5, 0), (11, -6), (11, 8)]), fill=255)
+    elif kind == "boss":
+        sd.ellipse(P([(-10, -11), (10, 6)]), fill=255); sd.rectangle(P([(-6, 4), (6, 10)]), fill=255)
+        sd.ellipse(P([(-7, -5), (-2, 0)]), fill=0); sd.ellipse(P([(2, -5), (7, 0)]), fill=0)
+    elif kind == "power":
+        sd.polygon(P([(0, -12), (10, 0), (4, 0), (4, 11), (-4, 11), (-4, 0), (-10, 0)]), fill=255)
+    im.alpha_composite(blur_glow(sym, 3 * k, col + (200,)))
+    g = vgrad(S, S, [(0, (255, 255, 255, 255)), (1, col + (255,))]); g.putalpha(sym)
+    im.alpha_composite(g)
+    return im.resize((40, 40), Image.LANCZOS)
+
+
+ICONS = ["coin", "heart", "anvil", "gem", "chest", "shop", "fountain", "event", "challenge", "elite", "boss", "power"]
+
+
 def build():
     ui = []
     ui.append(save(logo(), "logo"))                                   # 0
@@ -397,6 +447,10 @@ def build():
     sel.alpha_composite(tint(m, (255, 240, 200, 255)))
     ui.append(save(sel, "select"))                                     # 33
     ui.append(save(panel(64, 28, (34, 38, 76), (16, 18, 40), (150, 140, 190), ornament=False, r=8), "btn_small"))  # 34
+    for ic in ICONS:
+        ui.append(save(icon(ic), "icon_" + ic))
+    ui.append(save(panel(96, 120, (40, 34, 80), (16, 14, 34), (232, 192, 96), ornament=False, r=10), "card"))
+    ui.append(save(panel(96, 120, (30, 26, 56), (12, 10, 26), (120, 110, 160), ornament=False, r=10), "card_off"))
     open(os.path.join(GFX, "ui.t3s"), "w").write("--atlas -f rgba8 -z auto\n" + "\n".join(ui) + "\n")
     s, crack = sky()
     bg = [save(s, "sky"), save(crack, "crack"), save(bottom_bg(), "bottom"), save(pantheon_bg(), "pantheon")]

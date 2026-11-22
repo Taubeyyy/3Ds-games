@@ -2,10 +2,10 @@
   {
     "id": "skybreaker",
     "title": "Skybreaker",
-    "genre": "Action-Roguelike (Vorschau)",
-    "version": "0.1.0",
-    "desc": "Konzept-Vorschau unseres ersten FORGE-Spiels: Hauptmenü mit 3D-Szene und eigener Musik, Pantheon mit Seren und den 7 Göttern als drehbare 3D-Figuren, und ein Trainingsplatz zum Testen des Kampfes (Kombo, Sprint-Schlag, Wirbel, Splitterwurf, Ausweichen). Feedback erwünscht!",
-    "hours": "Vorschau: Menü, Pantheon, Kampf-Training"
+    "genre": "Action-Roguelike (spielbar)",
+    "version": "0.2.0",
+    "desc": "Seren kämpft sich Raum für Raum durch den zerbrochenen Himmelsturm: 12 Räume, Türwahl mit Belohnungen (Segen der 7 Götter, Amboss, Münzen, Herzen), Händler, Ereignisse, Prüfungen, Raum-Modifikatoren und ein Boss. Kampf: Kombo, Sprint-Schlag, Wirbel, Splitterwurf, Ausweichen. Sternsplitter schalten Fähigkeiten auf der Sternenkarte frei.",
+    "hours": "Läufe ~15 Min, Sternenkarte mit 23 Fähigkeiten"
   },
   {
     "id": "glibberalarm",

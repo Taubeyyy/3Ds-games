@@ -1,0 +1,13 @@
+70 shot r_title
+80 tap 160 120
+110 tap 160 50
+180 shot r_room1
+185 stick 0 -1 30
+200 key A
+210 key A
+220 key A
+240 shot r_fight
+250 key X
+300 key Y
+360 shot r_fight2
+400 quit
