@@ -1,6 +1,7 @@
 // SKYBREAKER – Kampf: Heldin, Gegner, Elemente der Götter, Effekte, Türen und Belohnungen im Raum
 #pragma once
 #include "game.hpp"
+#include "rooms.hpp"
 
 enum EnemyType { EN_DUMMY, EN_SHARD, EN_CRAWLER, EN_WISP, EN_BOMBER, EN_BRUTE, EN_BOSS, EN_SPIDER, EN_ARCHER, EN_GEODE, EN_GEODELET, EN_QUEEN, EN_COUNT };
 // Element = Gott (CH_IGNARA..CH_SYLV); -1 = keins
@@ -72,6 +73,11 @@ public:
 	float radius = 4.35f;
 	bool training = false, hub = false;
 	int biome = 0;
+	// Raster-Raum (Läufe)
+	bool gridMode = false;
+	int layout = LY_ROUND;
+	RoomGrid grid;
+	Mesh roomMesh, roomGlow;
 	// Ereignisse dieses Bildes (für die Lauf-Logik)
 	int kills = 0, doorEntered = -1;
 	bool pickupTaken = false, heroDied = false;

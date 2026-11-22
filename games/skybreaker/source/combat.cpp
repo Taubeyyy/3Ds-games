@@ -153,6 +153,27 @@ void Arena::newRoom(int seed, bool keepHero) {
 	// Hindernisse: 2 Feuerschalen am Rand + zufällige Säulen/Felsen
 	Rng r(u32(seed * 7919 + 13));
 	nObst = 0;
+	gridMode = !training && !hub;
+	if (gridMode) {
+		buildRoom(grid, layout, r.f() < 0.5f, biome, u32(seed * 2654435761u), roomMesh, roomGlow);
+		hero.pos = grid.entry;
+		for (int k = 0; k < grid.nPillar; k++) obst[nObst++] = {WM_R_COLUMN, grid.pillar[k], 0.42f, r.range(0, 6.28f), 1.1f, false};
+		if (biome == 0)
+			for (int k = 0; k < 2 && nObst < 10; k++) {
+				Vec3 p = grid.randomFloor(r, hero.pos, 3.0f);
+				obst[nObst++] = {WM_BRAZIER, p, 0.36f, 0, 1, true};
+			}
+		int extra = layout == LY_PILLARS ? 0 : r.irange(0, 2);
+		for (int k = 0; k < extra && nObst < 10; k++) {
+			Vec3 p = grid.randomFloor(r, hero.pos, 2.5f);
+			bool col = r.f() < 0.5f;
+			obst[nObst++] = {col ? WM_R_COLUMN : WM_R_ROCK, p, col ? 0.4f : 0.55f, r.range(0, 6.28f), r.range(0.9f, 1.15f), false};
+		}
+		g_camFocus = flat(hero.pos);
+		static const u32 TINT2[4] = {0xFFFFFF, 0xE8E0F0, 0xF0E4D8, 0xDCE8E8};
+		floorTint = Color(TINT2[seed & 3]);
+		return;
+	}
 	float a0 = r.range(0.6f, 1.0f);
 	obst[nObst++] = {WM_BRAZIER, Vec3(sinf(PI + a0) * 4.0f, 0.07f, cosf(PI + a0) * 4.0f), 0.36f, 0, 1, true};
 	obst[nObst++] = {WM_BRAZIER, Vec3(sinf(PI - a0) * 4.0f, 0.07f, cosf(PI - a0) * 4.0f), 0.36f, 0, 1, true};
@@ -697,7 +718,8 @@ void Arena::update(float dt, const Input &in) {
 	emb += dt;
 	while (emb > 0.1f) {
 		emb -= 0.1f;
-		const Obstacle &o = obst[g_r.irange(0, 1)];
+		const Obstacle &o = obst[g_r.irange(0, nObst > 0 ? nObst - 1 : 0)];
+		if (!o.fire) continue;
 		g_fx.emit(o.pos + Vec3(g_r.range(-0.15f, 0.15f), 1.25f, 0), 1, UI_P_EMBER, Color(0xFFD070), Color(0xFF5A1E, 0), 1.2f, 1.4f, 0.09f, 0.02f, -1.2f, Vec3(0, 1, 0), 0.5f);
 	}
 	for (auto &n : g_num) n.t += dt;
@@ -971,9 +993,12 @@ void Arena::update(float dt, const Input &in) {
 		}
 	}
 	auto bound = [&](Vec3 &p, float r) {
-		Vec3 f = flat(p);
-		float lim = radius - r + 0.3f;
-		if (f.len() > lim) { f = f * (lim / f.len()); p.x = f.x; p.z = f.z; }
+		if (gridMode) grid.collide(p, r * 0.9f);
+		else {
+			Vec3 f = flat(p);
+			float lim = radius - r + 0.3f;
+			if (f.len() > lim) { f = f * (lim / f.len()); p.x = f.x; p.z = f.z; }
+		}
 		for (int k = 0; k < nObst; k++) {
 			const Obstacle &o = obst[k];
 			Vec3 d = flat(p - o.pos);
@@ -1011,7 +1036,7 @@ void Arena::update(float dt, const Input &in) {
 				if (!p.pierce) { g_fx.emit(p.p, 14, UI_P_SPARK, Color(0xFFFFFF), pc.alpha(0), 6, 0.4f, 0.26f, 0); p.life = 0; break; }
 			}
 		}
-		if (flat(p.p).len() > radius + 1.5f) p.life = 0;
+		if (gridMode ? !grid.floorAt(p.p.x, p.p.z) : flat(p.p).len() > radius + 1.5f) { if (p.life > 0) g_fx.emit(p.p, 6, UI_P_SPARK, Color(0xFFFFFF), Color(0x8A8098, 0), 3, 0.3f, 0.15f, 0.02f); p.life = 0; }
 	}
 	// Beschwörungen
 	for (Summon &m : g_sum) {
@@ -1083,6 +1108,7 @@ void Arena::update(float dt, const Input &in) {
 		p.life -= dt;
 		p.p += p.v * dt;
 		if (g_r.f() < 0.5f) g_fx.emit(p.p, 1, UI_P_SPARK, Color(0xB0FFF8, 0.8f), Color(0x3AA8C0, 0), 0.3f, 0.3f, 0.14f, 0.02f);
+		if (gridMode && !grid.floorAt(p.p.x, p.p.z)) { p.life = 0; continue; }
 		if (flat(p.p - h.pos).len() < 0.35f + p.r && h.dead <= 0) {
 			if (h.act == ACT_DASH || h.iframe > 0) continue;
 			hurtHero(p.dmg, p.p - p.v * 0.1f);
@@ -1122,7 +1148,12 @@ void Arena::update(float dt, const Input &in) {
 	}
 	g_comboT += dt;
 	if (time - g_lastHitT > 1.6f) chain = 0;
-	g_camFocus = g_camFocus + (Vec3(h.pos.x * 0.7f, 0, h.pos.z * 0.6f - 0.4f) - g_camFocus) * fminf(1, dt * 5);
+	{
+		Vec3 want = Vec3(h.pos.x * 0.7f, 0, h.pos.z * 0.6f - 0.4f);
+		if (gridMode) want = Vec3(clampf(h.pos.x, grid.minX + 2.5f, grid.maxX - 2.5f), 0, clampf(h.pos.z - 0.5f, grid.minZ + 1.0f, grid.maxZ - 1.5f));
+		if (gridMode && grid.maxX - grid.minX < 5) want.x = (grid.minX + grid.maxX) * 0.5f;
+		g_camFocus = g_camFocus + (want - g_camFocus) * fminf(1, dt * 5);
+	}
 }
 
 // ------------------------------------------------------------------ Zeichnen
@@ -1202,10 +1233,15 @@ void Arena::draw(Gfx &g) {
 	{                                                                  // zwei nächste Wandfackeln
 		float best[2] = {1e9f, 1e9f};
 		Vec3 bp[2];
-		for (int k = 0; k < 28; k += 3) {
-			float a0 = 2 * PI * k / 28, am = 2 * PI * (k + 0.5f) / 28;
-			if (cosf(am) > 0.35f) continue;
-			Vec3 p(sinf(a0) * 4.83f, 2.3f, cosf(a0) * 4.83f);
+		int nt = gridMode ? grid.nTorch : 28;
+		for (int k = 0; k < nt; k += gridMode ? 1 : 3) {
+			Vec3 p;
+			if (gridMode) p = grid.torch[k];
+			else {
+				float a0 = 2 * PI * k / 28, am = 2 * PI * (k + 0.5f) / 28;
+				if (cosf(am) > 0.35f) continue;
+				p = Vec3(sinf(a0) * 4.83f, 2.3f, cosf(a0) * 4.83f);
+			}
 			float d = (p - h.pos).len();
 			if (d < best[0]) { best[1] = best[0]; bp[1] = bp[0]; best[0] = d; bp[0] = p; }
 			else if (d < best[1]) { best[1] = d; bp[1] = p; }
@@ -1232,7 +1268,12 @@ void Arena::draw(Gfx &g) {
 	Material al = lit;
 	al.specular = 0.3f;
 	al.color = floorTint;
-	if (biome == 1) {
+	if (gridMode) {
+		gfx3d::draw(roomMesh, Mat4::identity(), al);
+		Material rg; rg.lit = false;
+		rg.color = biome == 1 ? Color(0xFFFFFF).mix(Color(0xC8D8FF), 0.5f + 0.5f * sinf(t * 1.2f)) : Color(0xFFFFFF).mix(Color(0xFFD0A0), 0.5f + 0.5f * sinf(t * 13));
+		gfx3d::draw(roomGlow, Mat4::identity(), rg);
+	} else if (biome == 1) {
 		gfx3d::draw(A.world[WM_ARENA_CAVE], Mat4::identity(), al);
 		gfx3d::draw(A.world[WM_CAVE], Mat4::identity(), lit);
 		Material cg; cg.lit = false; cg.color = Color(0xFFFFFF).mix(Color(0xC8D8FF), 0.5f + 0.5f * sinf(t * 1.2f));
@@ -1245,7 +1286,7 @@ void Arena::draw(Gfx &g) {
 		gfx3d::draw(A.world[WM_DWALL_FIRE], Mat4::translate(Vec3(0, 2.18f, 0)) * Mat4::scale(Vec3(1, fl, 1)) * Mat4::translate(Vec3(0, -2.18f, 0)), wf);
 	}
 	Material ag; ag.lit = false; ag.color = Color(0xFFFFFF).mix(Color(0x8AF0FF), 0.5f + 0.5f * sinf(t * 1.5f));
-	gfx3d::draw(A.world[WM_ARENA_GLOW], Mat4::identity(), ag);
+	if (!gridMode) gfx3d::draw(A.world[WM_ARENA_GLOW], Mat4::identity(), ag);
 	for (int k = 0; k < nObst; k++) {
 		const Obstacle &o = obst[k];
 		Mat4 bm = Mat4::translate(o.pos) * Mat4::rotY(o.yaw) * Mat4::scale(Vec3(o.scale, o.scale, o.scale));
@@ -1419,12 +1460,17 @@ void Arena::draw(Gfx &g) {
 	float dep, dep2;
 	for (int k = 0; k < nObst; k++)
 		if (obst[k].fire && gfx3d::project(g, cam, obst[k].pos + Vec3(0, 1.3f, 0), &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 1.1f, 1.1f, 0, Color(0xFF9A4A, 0.45f + 0.1f * sinf(t * 11)), 1, dep);
-	for (int k = 0; k < 28 && biome == 0; k += 3) {
-		float a0 = 2 * PI * k / 28, am = 2 * PI * (k + 0.5f) / 28;
-		if (cosf(am) > 0.35f) continue;
-		if (gfx3d::project(g, cam, Vec3(sinf(a0) * 4.83f, 2.32f, cosf(a0) * 4.83f), &sp, &dep))
-			g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 0.8f, 0.8f, 0, Color(0xFFA050, 0.4f + 0.1f * sinf(t * 9 + k)), 1, dep);
-	}
+	if (gridMode) {
+		for (int k = 0; k < grid.nTorch; k++)
+			if (gfx3d::project(g, cam, grid.torch[k], &sp, &dep))
+				g.image(A.ui[UI_P_GLOW], sp.x, sp.y, biome ? 1.2f : 0.8f, biome ? 1.2f : 0.8f, 0, Color(biome ? (k % 2 ? 0xB08AFF : 0x6AD8FF) : 0xFFA050, (biome ? 0.25f : 0.4f) + 0.1f * sinf(t * 9 + k)), 1, dep);
+	} else
+		for (int k = 0; k < 28 && biome == 0; k += 3) {
+			float a0 = 2 * PI * k / 28, am = 2 * PI * (k + 0.5f) / 28;
+			if (cosf(am) > 0.35f) continue;
+			if (gfx3d::project(g, cam, Vec3(sinf(a0) * 4.83f, 2.32f, cosf(a0) * 4.83f), &sp, &dep))
+				g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 0.8f, 0.8f, 0, Color(0xFFA050, 0.4f + 0.1f * sinf(t * 9 + k)), 1, dep);
+		}
 	for (const HProj &p : g_hp)
 		if (p.life > 0 && gfx3d::project(g, cam, p.p, &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 0.9f, 0.9f, 0, Color(p.god >= 0 ? godColor(p.god) : 0x6AD8FF, 0.7f), 1, dep);
 	for (const EProj &p : g_ep)

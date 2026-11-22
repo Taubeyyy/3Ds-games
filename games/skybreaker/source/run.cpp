@@ -71,12 +71,7 @@ static void spawnWave() {
 		float cost = type == EN_BRUTE ? 5 : type == EN_GEODE ? 4 : type == EN_CRAWLER ? 1 : 2;
 		if (cost > budget + 0.5f) continue;
 		budget -= cost;
-		Vec3 p;
-		for (int k = 0; k < 10; k++) {
-			float a = r.range(0, 2 * PI), d = r.range(1.6f, 3.9f);
-			p = Vec3(sinf(a) * d, 0, cosf(a) * d);
-			if ((p - AR.hero.pos).len() > 2.3f) break;
-		}
+		Vec3 p = AR.grid.randomFloor(r, AR.hero.pos, 2.6f);
 		bool elite = R.roomType == RT_ELITE && R.wave == 0 && n < (R.room >= 7 ? 2 : 1);
 		int id = AR.spawn(type, p, elite, n * 0.12f);
 		if (id >= 0) {
@@ -106,16 +101,22 @@ static void enterRoom(int type, int reward, int god, int mod) {
 	R.choice = CK_NONE;
 	int prevBiome = AR.biome;
 	AR.biome = R.room > BOSS1_ROOM ? 1 : 0;
+	AR.layout = type == RT_BOSS ? LY_ROUND : (type == RT_SHOP || type == RT_FOUNTAIN || type == RT_EVENT || type == RT_TREASURE) ? (R.rng.f() < 0.5f ? LY_HALL : LY_ROUND)
+	          : R.rng.irange(0, LY_COUNT - 1);
 	AR.newRoom(int(R.rng.next() % 1000) + R.room * 31);
 	if (AR.biome == 1 && prevBiome == 0) ui::toast("Neuer Bereich", "Die Kristallgrotten", Color(0x8AE8FF));
 	AR.dmgMulRoom = mod == RM_GLASS ? 1.5f : 1;
 	AR.speedMulRoom = mod == RM_HASTE ? 1.35f : 1;
 	// Räume ohne Kampf: Objekt in der Mitte
 	int center = type == RT_TREASURE ? PK2_CHEST : type == RT_SHOP ? PK2_SHOP : type == RT_FOUNTAIN ? PK2_FOUNTAIN : type == RT_EVENT ? PK2_EVENT : 0;
-	if (center) { AR.pickup = Pickup(); AR.pickup.kind = center; AR.pickup.pos = Vec3(0, 0.075f, -0.6f); AR.pickup.active = true; }
+	if (center) {
+		AR.pickup = Pickup(); AR.pickup.kind = center;
+		AR.pickup.pos = AR.grid.floorAt(0, -0.6f) ? Vec3(0, 0.075f, -0.6f) : AR.grid.randomFloor(R.rng, AR.hero.pos, 2);
+		AR.pickup.active = true;
+	}
 	if (type == RT_BOSS) {
 		bool queen = R.room >= LAST_ROOM;
-		int id = AR.spawn(queen ? EN_QUEEN : EN_BOSS, Vec3(0, 0, -1.8f), false, 0.4f);
+		int id = AR.spawn(queen ? EN_QUEEN : EN_BOSS, Vec3(0, 0, -1.6f), false, 0.4f);
 		if (id >= 0) { AR.enemies[id].hp = AR.enemies[id].maxHp = queen ? 2000.f : 1300.f; }
 		audio::musicVolume(S.music ? 0.85f : 0);
 	}
@@ -124,9 +125,8 @@ static void enterRoom(int type, int reward, int god, int mod) {
 
 static void genDoor(Door &d, int i, int n, Rng &r) {
 	d = Door();
-	float a = n == 2 ? (i ? 0.42f : -0.42f) : (i - 1) * 0.62f;
-	d.pos = Vec3(sinf(a) * 4.75f, 0.075f, -cosf(a) * 4.75f);
-	d.yaw = -a;
+	d.pos = AR.grid.doorSlot[i < AR.grid.nSlots ? i : 0];
+	d.yaw = 0;
 	d.active = true;
 	int next = R.room + 1;
 	float x = r.f() * 100;
@@ -161,6 +161,7 @@ static void openDoors() {
 	Rng &r = R.rng;
 	int nx = R.room + 1;
 	int n = (nx == LAST_ROOM || nx == BOSS1_ROOM) ? 1 : (nx == LAST_ROOM - 1 || nx == BOSS1_ROOM - 1) ? 2 : (r.f() < 0.45f ? 3 : 2);
+	if (n > AR.grid.nSlots) n = AR.grid.nSlots > 0 ? AR.grid.nSlots : 1;
 	for (int i = 0; i < n; i++) {
 		for (int tries = 0; tries < 8; tries++) {
 			genDoor(AR.doors[i], i, n, r);
@@ -170,7 +171,6 @@ static void openDoors() {
 			if (!dup) break;
 		}
 	}
-	if (n == 1) AR.doors[0].pos = Vec3(0, 0.075f, -4.75f), AR.doors[0].yaw = 0;
 	sfx(A.chime, 0.8f, 0.6f);
 }
 
@@ -263,7 +263,7 @@ static void roomCleared() {
 		AR.pickup = Pickup();
 		AR.pickup.kind = R.reward;
 		AR.pickup.god = R.god;
-		AR.pickup.pos = Vec3(0, 0.075f, -0.2f);
+		AR.pickup.pos = AR.grid.floorAt(0, -0.2f) ? Vec3(0, 0.075f, -0.2f) : AR.grid.randomFloor(R.rng, Vec3(), 0);
 		AR.pickup.active = true;
 	} else openDoors();
 }
@@ -578,7 +578,8 @@ void runDraw(Gfx &g) {
 		if (R.bannerT < 2.2f && R.state != RS_DEAD && R.state != RS_WIN && R.roomType != RT_BOSS) {
 			float a = R.bannerT < 0.3f ? R.bannerT / 0.3f : R.bannerT > 1.7f ? (2.2f - R.bannerT) / 0.5f : 1;
 			char b[48];
-			snprintf(b, sizeof b, "Raum %d · %s", R.room, ROOM_NAME[R.roomType]);
+			if (R.roomType == RT_COMBAT) snprintf(b, sizeof b, "Raum %d · %s", R.room, LAYOUT_NAME[AR.layout]);
+			else snprintf(b, sizeof b, "Raum %d · %s", R.room, ROOM_NAME[R.roomType]);
 			g.rrect(80, 56, 240, R.mod ? 50 : 34, 12, Color(0x0A0A20, 0.75f * a), Color(0x1A1430, 0.75f * a), -2);
 			g.text(200, 62, 0.55f, Color(0xFFE8B0, a), b, ALIGN_CENTER, 0, true, -2);
 			if (R.mod) g.text(200, 86, 0.36f, Color(0xFF9A7A, a), MOD_NAME[R.mod], ALIGN_CENTER, 0, true, -2);

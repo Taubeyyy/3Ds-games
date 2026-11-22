@@ -3,9 +3,9 @@
     "id": "skybreaker",
     "title": "Skybreaker",
     "genre": "Action-Roguelike (spielbar)",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "desc": "Als Schatten-Kriegerin steigst du in die Tiefe. In der begehbaren Zuflucht wählst du Waffen (Schattenklinge, Schattendolche, Mondsense), schaltest am Sternenaltar Fähigkeiten frei und übst an der Puppe. Läufe: Dungeon-Hallen, Wächter der Tiefe, Kristallgrotten, Kristallkönigin. Die 7 Götter verändern deine Fähigkeiten (Tornados, Schattenklone, zielsuchende Blitze, Geistwolf ...), jeder mit eigenem Motiv.",
-    "hours": "Zuflucht, 3 Waffen, 2 Bereiche, 2 Bosse"
+    "hours": "Zuflucht, 3 Waffen, 7 Raumformen, 2 Bereiche, 2 Bosse"
   },
   {
     "id": "glibberalarm",
