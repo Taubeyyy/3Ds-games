@@ -2,11 +2,11 @@
 import os, sys, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-for script in ("gfx.py", "world.py", "enemies.py", "music.py"):
+for script in ("gfx.py", "world.py", "enemies.py", "music.py", "motifs.py"):
     subprocess.check_call([sys.executable, os.path.join(HERE, script)], stdout=subprocess.DEVNULL)
 import characters
 data = os.path.join(HERE, "..", "data")
-KINDS = ["body", "arm", "hair", "scarf", "cape", "glow", "fx", "weapon", "weapon_glow", "orbit", "orbit_glow", "pet"]
+KINDS = ["body", "arm", "hair", "scarf", "cape", "glow", "fx", "weapon", "weapon_glow", "orbit", "orbit_glow", "pet", "arm_l", "leg_l", "leg_r"]
 rows, incs = [], []
 tri_total = 0
 for ci, (name, fn) in enumerate(characters.ALL.items()):

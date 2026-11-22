@@ -2,12 +2,13 @@
 #include "meta.hpp"
 
 static bool g_helpShown;
-static int g_spawnN;
+static int g_spawnN, g_testGod = -1;
 
 void trainingEnter() {
 	AR.begin(true, baseMods());
 	AR.spawn(EN_DUMMY, Vec3(0, 0, -1.4f));
 	g_spawnN = 0;
+	g_testGod = -1;
 	if (S.music) audio::musicVolume(0.45f);
 	if (!g_helpShown) { ui::toast("Trainingsplatz", "A Kombo (halten) · B+A Sprint-Schlag · X Wirbel · Y Splitter", Color(0x8AF0FF)); g_helpShown = true; }
 }
@@ -15,6 +16,11 @@ void trainingEnter() {
 void trainingUpdate(float dt, const Input &in) {
 	if (ui::clicked(71) || in.pressed(KEY_START)) { sfx(A.click, 0.8f); if (S.music) audio::musicVolume(0.75f); gotoScene(SC_TITLE); return; }
 	if (ui::clicked(72)) { sfx(A.click); AR.resetStats(); }
+	if (ui::clicked(74) || in.pressed(KEY_SELECT)) {             // Segen eines Gottes zum Testen auf alle Fähigkeiten legen
+		g_testGod = g_testGod >= CH_SYLV ? -1 : (g_testGod < 0 ? CH_IGNARA : g_testGod + 1);
+		for (int i = 0; i < SL_COUNT; i++) { AR.mods.slotGod[i] = g_testGod; AR.mods.slotPow[i] = 1.5f; }
+		if (g_testGod > 0) sfx(A.motif[g_testGod], 1, 0.8f); else sfx(A.click);
+	}
 	if (ui::clicked(73)) {                       // Gegner zum Üben (im Training nimmst du keinen Schaden)
 		sfx(A.click);
 		static const int T[4] = {EN_SHARD, EN_CRAWLER, EN_WISP, EN_BRUTE};
@@ -62,6 +68,12 @@ void trainingDraw(Gfx &g) {
 	}
 	drawButton(g, 72, 8, 182, UI_BTN_SMALL, "", false, 0);
 	g.text(40, 187, 0.3f, Color(0xFFFFFF), "Reset", ALIGN_CENTER);
-	drawButton(g, 73, 80, 182, UI_BTN, "Gegner rufen", false, 0);
+	drawButton(g, 73, 248, 182, UI_BTN_SMALL, "", false, 0);
+	g.text(280, 187, 0.3f, Color(0xFFFFFF), "Gegner", ALIGN_CENTER);
+	ui::panel(g, 78, 178, 164, 40, Color(0x14102C, 0.95f), g_testGod > 0 ? Color(godColor(g_testGod)) : Color(0x5A5280));
+	if (g_testGod > 0) g.image(A.ui[UI_SIGIL_SEREN + g_testGod], 98, 198, 0.4f, 0.4f, 0, Color(0xFFFFFF));
+	g.text(g_testGod > 0 ? 170 : 160, 183, 0.36f, Color(0xFFFFFF), g_testGod > 0 ? CHAR_INFO[g_testGod].name : "Ohne Segen", ALIGN_CENTER);
+	g.text(g_testGod > 0 ? 170 : 160, 200, 0.3f, Color(0xB8B4D8), "Gott wechseln (SELECT)", ALIGN_CENTER);
+	ui::hit(74, 78, 178, 164, 40);
 	g.text(160, 224, 0.3f, Color(0x6A6490), "Im Training nimmst du keinen Schaden.", ALIGN_CENTER);
 }

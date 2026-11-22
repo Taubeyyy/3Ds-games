@@ -4,11 +4,19 @@
 #include "ui_t3x.h"
 #include "bg_t3x.h"
 #include "theme_wav.h"
+#include "motif_ignara_wav.h"
+#include "motif_thalor_wav.h"
+#include "motif_nerys_wav.h"
+#include "motif_vexa_wav.h"
+#include "motif_korrin_wav.h"
+#include "motif_lyra_wav.h"
+#include "motif_sylv_wav.h"
 
 Assets A;
 CharModel CM[CH_COUNT];
 Settings S;
 const Vec3 SEREN_SHOULDER(0.2f, 1.32f, 0.0f), SEREN_HAND(0.275f, 0.81f, 0.11f);
+static const Vec3 HIP_L(-0.1f, 0.84f, 0), HIP_R(0.1f, 0.84f, 0), SHOULDER_L(-0.2f, 1.32f, 0);
 
 const CharInfo CHAR_INFO[CH_COUNT] = {
 	{"Seren", "Die Sternenschmiedin", "Sternstahl",
@@ -89,6 +97,13 @@ void loadAssets() {
 	A.disc = Mesh::cylinder(1, 0.01f, 20, Color(0xFFFFFF));
 	A.shard = Mesh::sphere(0.12f, 4, 2, Color(0xFFFFFF));
 	A.theme = audio::loadWav(theme_wav, theme_wav_size);
+	A.motif[CH_IGNARA] = audio::loadWav(motif_ignara_wav, motif_ignara_wav_size);
+	A.motif[CH_THALOR] = audio::loadWav(motif_thalor_wav, motif_thalor_wav_size);
+	A.motif[CH_NERYS] = audio::loadWav(motif_nerys_wav, motif_nerys_wav_size);
+	A.motif[CH_VEXA] = audio::loadWav(motif_vexa_wav, motif_vexa_wav_size);
+	A.motif[CH_KORRIN] = audio::loadWav(motif_korrin_wav, motif_korrin_wav_size);
+	A.motif[CH_LYRA] = audio::loadWav(motif_lyra_wav, motif_lyra_wav_size);
+	A.motif[CH_SYLV] = audio::loadWav(motif_sylv_wav, motif_sylv_wav_size);
 	using namespace synth;
 	A.click = click();
 	A.error = error();
@@ -124,7 +139,7 @@ void sfx(const Sound &s, float pitch, float vol) { if (S.sfx) audio::play(s, pit
 static Mat4 around(const Vec3 &p, const Mat4 &r) { return Mat4::translate(p) * r * Mat4::translate(-p); }
 
 Mat4 serenWeaponXf(const Mat4 &xf, const Pose &p) {
-	Mat4 body = xf * Mat4::rotY(p.bodyTwist);
+	Mat4 body = (p.sink != 0 ? Mat4::translate(Vec3(0, -p.sink, 0)) * xf : xf) * Mat4::rotY(p.bodyTwist);
 	Mat4 arm = body * around(SEREN_SHOULDER, Mat4::rotY(p.armYaw) * Mat4::rotX(-p.armLift));
 	float rx = 0.78f * PI + (PI - 0.78f * PI) * p.weaponBlend;
 	return arm * Mat4::translate(SEREN_HAND) * Mat4::rotZ(-0.12f * (1 - p.weaponBlend)) * Mat4::rotX(rx) * Mat4::rotY(p.weaponRoll);
@@ -141,9 +156,15 @@ void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose, float flash, bo
 	Material glow;
 	glow.lit = false;
 	float breathe = 1 + 0.012f * sinf(t * 2.2f + ch);
-	Mat4 bx = xf * Mat4::rotY(P.bodyTwist);
+	Mat4 base = P.sink != 0 ? Mat4::translate(Vec3(0, -P.sink, 0)) * xf : xf;
+	Mat4 bx = base * Mat4::rotY(P.bodyTwist);
 	Mat4 bodyXf = bx * Mat4::scale(Vec3(1, breathe, 1));
 	gfx3d::draw(m.part[PK_BODY], bodyXf, body);
+	if (m.has[PK_LEG_L]) {                                        // Beine schwingen gegengleich um die Hüfte
+		gfx3d::draw(m.part[PK_LEG_L], base * around(HIP_L, Mat4::rotX(P.legSwing)), body);
+		gfx3d::draw(m.part[PK_LEG_R], base * around(HIP_R, Mat4::rotX(-P.legSwing)), body);
+	}
+	if (m.has[PK_ARM_L]) gfx3d::draw(m.part[PK_ARM_L], bx * around(SHOULDER_L, Mat4::rotX(-P.armSwingL) * Mat4::rotZ(-0.05f)), body);
 	// schwingende Teile
 	static const int SW[3] = {PK_HAIR, PK_SCARF, PK_CAPE};
 	for (int k = 0; k < 3; k++) {
@@ -194,6 +215,8 @@ void drawGhost(int ch, const Mat4 &xf, const Pose *pose, Color c) {
 	Mat4 bx = xf * Mat4::rotY(P.bodyTwist);
 	gfx3d::draw(m.part[PK_BODY], bx, g);
 	if (m.has[PK_CAPE]) gfx3d::draw(m.part[PK_CAPE], bx, g);
+	if (m.has[PK_LEG_L]) { gfx3d::draw(m.part[PK_LEG_L], bx, g); gfx3d::draw(m.part[PK_LEG_R], bx, g); }
+	if (m.has[PK_ARM_L]) gfx3d::draw(m.part[PK_ARM_L], bx, g);
 	if (m.has[PK_ARM]) gfx3d::draw(m.part[PK_ARM], bx * around(SEREN_SHOULDER, Mat4::rotY(P.armYaw) * Mat4::rotX(-P.armLift)), g);
 }
 

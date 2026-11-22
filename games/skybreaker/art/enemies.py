@@ -96,6 +96,66 @@ def waechter():
     return dict(body=b.vary(0.05, 86), glow=glow)
 
 
+def kristallspinne():
+    BODY, CRY, EYE = rgb(0x2A2C44), rgb(0x8AE8FF), rgb(0xFF5AD0)
+    b = sphere(0.24, 7, 4, BODY, squash=0.7).scale(1, 1, 1.3).move(0, 0.34, -0.05)
+    b += sphere(0.15, 6, 4, BODY).move(0, 0.32, 0.28)
+    for sx in (-1, 1):
+        for k in range(4):
+            z = -0.2 + k * 0.14
+            b += tube([(sx * 0.15, 0.36, z), (sx * 0.4, 0.55, z + 0.05), (sx * 0.55, 0.0, z + 0.1)], [0.025, 0.02, 0.01], 4, BODY)
+    glow = Mesh()
+    for i, (x, z) in enumerate([(0, -0.12), (0.1, 0.0), (-0.1, 0.02), (0, 0.1)]):
+        glow += octa(0.05, 0.16 + 0.04 * (i % 2), CRY).move(x, 0.5, z - 0.1)
+    for sx in (-1, 1):
+        glow += box(0.03, 0.03, 0.01, EYE).move(sx * 0.05, 0.36, 0.42)
+    return dict(body=b.vary(0.06, 87), glow=glow)
+
+
+def schuetze():
+    ROBE, ROBE2, CRY = rgb(0x3A2E5A), rgb(0x241C3A), rgb(0xB08AFF)
+    b = lathe([(0.24, 0), (0.2, 0.5), (0.16, 0.9), (0.1, 1.2), (0.0, 1.32)], 7, ROBE).recolor(lambda c, p: mix(ROBE2, ROBE, max(0, min(1, p[1] / 1.0))))
+    b += sphere(0.13, 6, 4, ROBE2).move(0, 1.3, 0.02)
+    b += tube([(0.14, 1.05, 0.05), (0.3, 1.0, 0.25), (0.32, 1.0, 0.45)], [0.035, 0.03, 0.025], 5, ROBE)
+    bow = tube([(0, -0.4, 0), (0.06, -0.2, 0), (0.08, 0, 0), (0.06, 0.2, 0), (0, 0.4, 0)], [0.012, 0.02, 0.024, 0.02, 0.012], 4, rgb(0x6A5AA0))
+    b += bow.ry(PI / 2).move(0.32, 1.0, 0.48)
+    glow = box(0.12, 0.02, 0.02, CRY).move(0, 1.32, 0.13) + octa(0.05, 0.1, CRY).move(0, 0.85, 0.2)
+    glow += box(0.006, 0.8, 0.006, CRY).move(0.32, 0.6, 0.48)
+    return dict(body=b.vary(0.05, 88), glow=glow)
+
+
+def geode():
+    ROCK, CRY = rgb(0x4A4A62), rgb(0xD08AFF)
+    b = ico(0.5, ROCK).jitter(0.07, 89).scale(1, 0.85, 1).move(0, 0.45, 0)
+    for sx in (-1, 1):
+        b += ico(0.16, shade(ROCK, 0.85)).jitter(0.03, 90 + sx).move(sx * 0.3, 0.12, 0.15)
+    glow = Mesh()
+    for i in range(6):
+        a = 2 * PI * i / 6
+        glow += octa(0.07, 0.2, CRY).rx(0.6).ry(a).move(math.sin(a) * 0.32, 0.62, math.cos(a) * 0.32)
+    glow += box(0.18, 0.04, 0.02, rgb(0xFFE0FF)).move(0, 0.55, 0.47)
+    return dict(body=b.vary(0.07, 91), glow=glow)
+
+
+def koenigin():
+    CRY, CRY2, DARK, GOLD = rgb(0x8AE8FF), rgb(0xC8A0FF), rgb(0x1E1A34), rgb(0xE8C060)
+    b = lathe([(0.0, 0.0), (0.55, 0.35), (0.45, 1.1), (0.3, 1.6), (0.38, 1.9), (0.0, 2.1)], 9, DARK)
+    b += sphere(0.22, 8, 5, rgb(0xC8D8F0)).move(0, 2.3, 0.03)
+    for sx in (-1, 1):
+        b += tube([(sx * 0.32, 1.8, 0), (sx * 0.7, 1.6, 0.2), (sx * 0.95, 1.85, 0.45)], [0.07, 0.06, 0.04], 5, DARK)
+    glow = Mesh()
+    for i in range(7):                                                   # Kristallkrone
+        a = -0.9 + 0.3 * i
+        glow += octa(0.05, 0.22 - abs(a) * 0.08, CRY if i % 2 else CRY2).rz(-a * 0.5).move(math.sin(a) * 0.2, 2.55 - abs(a) * 0.05, math.cos(a) * 0.12)
+    for i in range(10):                                                  # Kristallrock
+        a = 2 * PI * i / 10
+        glow += octa(0.12, 0.45, CRY2 if i % 2 else CRY).rx(0.5).ry(a).move(math.sin(a) * 0.5, 0.35, math.cos(a) * 0.5)
+    for sx in (-1, 1):
+        glow += octa(0.1, 0.25, CRY).move(sx * 0.98, 1.95, 0.5)
+    glow += box(0.14, 0.03, 0.02, rgb(0xFFFFFF)).move(0, 2.32, 0.24)
+    return dict(body=b.vary(0.05, 92), glow=glow)
+
+
 # ------------------------------------------------------------------ Requisiten
 def door():
     STONE, STONE2, GOLD = rgb(0xB0A8C0), rgb(0x8A8098), rgb(0xE8C060)
@@ -187,7 +247,8 @@ def coins():
 
 def build(out):
     parts = {}
-    for name, fn in (("shard", splitterling), ("crawler", krabbler), ("wisp", irrlicht), ("bomber", gluetkaefer), ("brute", waechter)):
+    for name, fn in (("shard", splitterling), ("crawler", krabbler), ("wisp", irrlicht), ("bomber", gluetkaefer), ("brute", waechter),
+                     ("spider", kristallspinne), ("archer", schuetze), ("geode", geode), ("queen", koenigin)):
         for k, m in fn().items():
             parts["e_%s_%s" % (name, k)] = m
     parts["r_door"], parts["r_portal"] = door()

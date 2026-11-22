@@ -135,7 +135,7 @@ def bottom_bg():
     gd.pieslice([cx - 30, 50, cx + 30, 110], 180, 360, fill=255)
     im.alpha_composite(blur_glow(gate, 14, (90, 200, 255, 120)))
     im.alpha_composite(tint(sil, (12, 10, 22, 235)))
-    im.alpha_composite(tint(gate, (40, 110, 150, 200)))
+    im.alpha_composite(tint(gate.filter(ImageFilter.GaussianBlur(3)), (40, 90, 140, 70)))
     for y in range(90, H, 18):
         d.line([(0, y), (W, y)], fill=(30, 26, 44, 120), width=1)
     # Vignette

@@ -2,7 +2,7 @@
 #pragma once
 #include "game.hpp"
 
-enum EnemyType { EN_DUMMY, EN_SHARD, EN_CRAWLER, EN_WISP, EN_BOMBER, EN_BRUTE, EN_BOSS, EN_COUNT };
+enum EnemyType { EN_DUMMY, EN_SHARD, EN_CRAWLER, EN_WISP, EN_BOMBER, EN_BRUTE, EN_BOSS, EN_SPIDER, EN_ARCHER, EN_GEODE, EN_GEODELET, EN_QUEEN, EN_COUNT };
 // Element = Gott (CH_IGNARA..CH_SYLV); -1 = keins
 enum Slot { SL_ATTACK, SL_SPECIAL, SL_CAST, SL_DASH, SL_COUNT };
 
@@ -24,7 +24,8 @@ struct Mods {
 struct Enemy {
 	int type = EN_DUMMY;
 	bool alive = false, elite = false;
-	Vec3 pos, vel, aim;
+	Vec3 pos, vel, aim, from;
+	float air = 0;
 	float yaw = 0, hp = 1, maxHp = 1, r = 0.35f, speed = 2, dmg = 10, scale = 1;
 	int state = 0;          // 0 Erscheinen, 1 Jagen, 2 Ausholen, 3 Angriff, 4 Erholen, 5 Sterben
 	float st = 0, cd = 0, flash = 0, stun = 0, wobX = 0, wobZ = 0, wvx = 0, wvz = 0, bob = 0;
@@ -69,6 +70,7 @@ public:
 	int nObst = 0;
 	float radius = 4.35f;
 	bool training = false;
+	int biome = 0;
 	// Ereignisse dieses Bildes (für die Lauf-Logik)
 	int kills = 0, doorEntered = -1;
 	bool pickupTaken = false, heroDied = false;

@@ -51,10 +51,28 @@ void boonDesc(const Offer &o, char *out, int n) {
 	if (o.upgrade) { snprintf(out, n, "Verstärkt deinen Segen um +%d%%.", int(p * 50)); return; }
 	switch (o.slot) {
 	case SL_ATTACK: snprintf(out, n, "Deine Angriffe: %s.", e); break;
-	case SL_SPECIAL: snprintf(out, n, "Dein Wirbel: %s.", e); break;
+	case SL_SPECIAL:
+		switch (o.god) {
+		case CH_IGNARA: snprintf(out, n, "Wirbel hinterlässt einen Feuerring, der %d/s brennt.", int(15 * p)); break;
+		case CH_THALOR: snprintf(out, n, "Wirbel entfesselt einen Tornado, der Feinde jagt und einsaugt (%.0f s).", 3 + p); break;
+		case CH_NERYS: snprintf(out, n, "Strudel: Wirbel zieht alle Feinde in der Nähe zu dir und bremst sie."); break;
+		case CH_VEXA: snprintf(out, n, "Zwei Schattenklone wirbeln neben dir mit (%d Schaden).", int(26 * p)); break;
+		case CH_KORRIN: snprintf(out, n, "Wirbel löst eine Schockwelle aus, die durch den Raum rollt (%d).", int(30 * p)); break;
+		case CH_LYRA: snprintf(out, n, "Wirbel schießt 6 Sternenstrahlen in alle Richtungen (%d).", int(18 * p)); break;
+		case CH_SYLV: snprintf(out, n, "Ranken halten getroffene Feinde 2 s fest und vergiften sie."); break;
+		}
+		break;
 	case SL_CAST:
-		if (o.god == CH_IGNARA) snprintf(out, n, "Splitter explodieren (%d) und %s.", int(18 * p), e);
-		else snprintf(out, n, "Dein Splitterwurf: %s.", e);
+		switch (o.god) {
+		case CH_IGNARA: snprintf(out, n, "Splitter explodiert beim Aufprall (%d) und setzt in Brand.", int(18 * p)); break;
+		case CH_THALOR: snprintf(out, n, "Statt zu werfen: Ein Blitz trifft automatisch den nächsten Feind (%d).", int(44 * p)); break;
+		case CH_NERYS: snprintf(out, n, "Splitter prallt bis zu 3x von Feind zu Feind."); break;
+		case CH_VEXA: snprintf(out, n, "Wirft 3 zielsuchende Schattendolche (je %d).", int(18 * p)); break;
+		case CH_KORRIN: snprintf(out, n, "Ein Felsbrocken rollt durch alle Feinde und stößt sie weg (%d).", int(50 * p)); break;
+		case CH_LYRA: snprintf(out, n, "Ein Stern kreist %.0f s um dich und trifft alle, die er berührt.", 6 + p * 2); break;
+		case CH_SYLV: snprintf(out, n, "Ruft einen Geistwolf, der %.0f s an deiner Seite kämpft.", 8 + p * 2); break;
+		default: snprintf(out, n, "Dein Splitterwurf: %s.", e);
+		}
 		break;
 	case SL_DASH:
 		switch (o.god) {

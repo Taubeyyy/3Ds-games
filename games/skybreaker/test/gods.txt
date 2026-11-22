@@ -1,0 +1,40 @@
+80 tap 160 120
+110 tap 160 155
+150 tap 280 195
+160 tap 280 195
+200 key SELECT
+210 key X
+230 shot g1_x
+260 key Y
+280 shot g1_y
+350 key SELECT
+360 key X
+380 shot g2_x
+410 key Y
+430 shot g2_y
+500 key SELECT
+510 key X
+530 shot g3_x
+560 key Y
+580 shot g3_y
+650 key SELECT
+660 key X
+680 shot g4_x
+710 key Y
+730 shot g4_y
+800 key SELECT
+810 key X
+830 shot g5_x
+860 key Y
+880 shot g5_y
+950 key SELECT
+960 key X
+980 shot g6_x
+1010 key Y
+1030 shot g6_y
+1100 key SELECT
+1110 key X
+1130 shot g7_x
+1160 key Y
+1180 shot g7_y
+1250 quit

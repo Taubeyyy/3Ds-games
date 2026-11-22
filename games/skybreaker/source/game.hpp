@@ -24,6 +24,7 @@ struct Assets {
 	Mesh slash, ring, disc, shard;
 	Sound theme;
 	Sound click, select, whoosh, chime, error, swing, swing3, hit, hitHeavy, dash, cast, spin, step;
+	Sound motif[CH_COUNT];
 };
 extern Assets A;
 
@@ -43,6 +44,8 @@ struct Pose {
 	float weaponRoll = 0;
 	float bodyTwist = 0;
 	float capeLift = 0;               // Umhang weht bei schneller Bewegung
+	float legSwing = 0, armSwingL = 0; // Laufzyklus (Beine, linker Arm)
+	float sink = 0;                   // Schatten-Dash: im Boden versinken (Meter)
 };
 extern const Vec3 SEREN_SHOULDER, SEREN_HAND;
 void drawChar(int ch, const Mat4 &xf, float t, const Pose *pose = nullptr, float flash = 0, bool weapon = true);

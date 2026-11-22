@@ -127,6 +127,66 @@ def seren():
     return dict(body=b.vary(0.05, 1), arm=armm.vary(0.05, 5), hair=hair.vary(0.04, 2), scarf=scarf, cape=cape.vary(0.04, 3), glow=glow, weapon=w, weapon_glow=wg)
 
 
+# ------------------------------------------------------------------ Seren als Schatten-Kriegerin
+def schatten():
+    CLOTH, CLOTH2, DARK = rgb(0x3A3050), rgb(0x2A223C), rgb(0x1C1626)
+    LEATHER, METAL, TRIM = rgb(0x3A2E3A), rgb(0x5E5C70), rgb(0x8A5AC8)
+    MASK, EYE, SHADOW, BLADE = rgb(0x1A1622), rgb(0x8AF0FF), rgb(0x9A6AFF), rgb(0x4A4660)
+    b = Mesh()
+    # Hüfte/Gürtel, Torso, Kopf mit Kapuze und Maske
+    b += prism(0.17, 0.165, 0.09, 8, LEATHER).move(0, 0.8, 0)
+    b += box(0.06, 0.06, 0.03, TRIM).move(0, 0.815, 0.16)
+    skirt = lathe([(0.23, 0.56), (0.19, 0.7), (0.17, 0.86)], 8, CLOTH2, cap_bottom=False, cap_top=False)
+    b += double_sided(cut(skirt, lambda p: p[2] > 0.1 and abs(p[0]) < 0.08))
+    b += lathe([(0.17, 0.88), (0.19, 1.04), (0.2, 1.2), (0.17, 1.33), (0.09, 1.41)], 8, CLOTH).scale(1, 1, 0.74)
+    b += box(0.05, 0.52, 0.025, LEATHER).rz(-0.55).move(0.0, 0.92, 0.135)       # Gurt
+    for sx in (-1, 1):                                                            # Schulterplatten
+        b += lathe([(0.0, 1.28), (0.11, 1.3), (0.12, 1.36), (0.0, 1.41)], 6, METAL).scale(1, 1, 0.9).move(sx * 0.2, 0, 0)
+        b += slab([(-0.05, 0), (0.05, 0), (0.0, 0.1)], 0.02, TRIM).move(sx * 0.21, 1.38, 0.08)
+    b += prism(0.05, 0.05, 0.1, 6, DARK).move(0, 1.38, 0)
+    b += lathe([(0.0, 1.46), (0.095, 1.5), (0.105, 1.6), (0.095, 1.68), (0.0, 1.74)], 8, MASK).scale(1, 1, 0.96)
+    hood = lathe([(0.13, 1.42), (0.15, 1.55), (0.14, 1.68), (0.1, 1.79), (0.03, 1.86), (0.0, 1.88)], 8, CLOTH)
+    b += cut(hood, lambda p: p[2] > 0.06 and 1.47 < p[1] < 1.74)
+    b += slab([(-0.03, 0), (0.03, 0), (0.0, -0.12)], 0.03, CLOTH).rx(0.3).move(0, 1.88, -0.06)  # Kapuzenspitze
+    b += box(0.2, 0.08, 0.03, CLOTH2, top=0.8).move(0, 1.47, 0.1)                 # Tuch vor dem Mund
+    glow = Mesh()
+    for sx in (-1, 1):
+        glow += box(0.036, 0.016, 0.01, EYE, top=0.6).rz(sx * 0.2).move(sx * 0.038, 1.6, 0.1)
+    rune = []
+    for i in range(8):
+        a = PI / 2 + PI * i / 4
+        rr = 0.05 if i % 2 == 0 else 0.022
+        rune.append((math.cos(a) * rr, math.sin(a) * rr))
+    glow += slab(rune, 0.01, SHADOW).move(0.0, 1.2, 0.155)
+    # Beine einzeln (Drehpunkt Hüfte)
+    def legm(x):
+        l = Mesh()
+        l += prism(0.068, 0.085, 0.54, 6, DARK).move(x, 0.3, 0)
+        l += prism(0.078, 0.07, 0.32, 6, LEATHER).move(x, 0.0, 0)
+        l += box(0.12, 0.07, 0.17, shade(LEATHER, 0.85), top=0.8).move(x, 0, 0.05)
+        l += box(0.09, 0.08, 0.03, METAL, top=0.7).move(x, 0.42, 0.072)
+        l += prism(0.082, 0.082, 0.035, 6, TRIM).move(x, 0.3, 0)
+        return l
+    # linker Arm einzeln (Drehpunkt Schulter)
+    arml = arm(-1, (-0.2, 1.32, 0), (-0.25, 1.07, -0.02), (-0.27, 0.84, 0.03), CLOTH, METAL, DARK)
+    armr = arm(1, (0.2, 1.32, 0), (0.25, 1.07, 0.02), (0.27, 0.86, 0.09), CLOTH, METAL, DARK)
+    # zerfetzter Schattenumhang + Schal
+    cape = cloth(0.46, 0.92, 5, 4, CLOTH2, curve=0.07, flare=0.6, col_bottom=DARK).rx(0.1).move(0, 1.37, -0.13)
+    cape = cape.bend(lambda p: (p[0], p[1] + (0.1 * abs(math.sin(p[0] * 24)) if p[1] < 0.65 else 0), p[2]))
+    cape += Mesh().quad((-0.22, 1.37, -0.13), (0.22, 1.37, -0.13), (0.22, 1.38, -0.08), (-0.22, 1.38, -0.08), TRIM)
+    scarf = double_sided(Mesh().quad((-0.05, 0, 0), (0.05, 0, 0), (0.06, -0.3, -0.06), (-0.02, -0.34, -0.06), CLOTH)
+                         .quad((-0.02, -0.34, -0.06), (0.06, -0.3, -0.06), (0.04, -0.5, -0.12), (0.0, -0.56, -0.14), DARK)).move(0.1, 1.42, -0.1)
+    # Schattenklinge (Griff im Ursprung)
+    w = blade(0.8, 0.07, 0.02, BLADE, edge=rgb(0x2A2638)).move(0, 0.12, 0)
+    w += box(0.18, 0.035, 0.05, DARK, top=0.7).move(0, 0.09, 0)
+    w += slab([(-0.09, 0), (-0.05, 0.05), (0.0, 0.0)], 0.03, TRIM).move(0, 0.1, 0) + slab([(0.0, 0.0), (0.05, 0.05), (0.09, 0)], 0.03, TRIM).move(0, 0.1, 0)
+    w += prism(0.018, 0.016, 0.11, 6, LEATHER).move(0, -0.02, 0)
+    w += octa(0.026, 0.03, TRIM).move(0, -0.04, 0)
+    wg = slab([(-0.01, 0.13), (0.01, 0.13), (0.006, 0.72), (0.0, 0.84), (-0.006, 0.72)], 0.026, SHADOW)
+    return dict(body=b.vary(0.05, 1), arm=armr.vary(0.05, 5), arm_l=arml.vary(0.05, 6), leg_l=legm(-0.1).vary(0.05, 7), leg_r=legm(0.1).vary(0.05, 8),
+                scarf=scarf, cape=cape.vary(0.04, 3), glow=glow, weapon=w, weapon_glow=wg)
+
+
 # ------------------------------------------------------------------ Götter (Maßstab ~1,3 × Mensch)
 def torso(col, y0, y1, w=0.19, depth=0.74, chest=1.0):
     prof = [(w * 0.9, y0), (w * chest, y0 + (y1 - y0) * 0.55), (w * 0.95 * chest, y0 + (y1 - y0) * 0.85), (w * 0.45, y1)]
@@ -405,7 +465,7 @@ def scaled(fn, k):
     return g
 
 
-ALL = {"seren": seren, "ignara": scaled(ignara, 1.32), "thalor": scaled(thalor, 1.32), "nerys": scaled(nerys, 1.3),
+ALL = {"seren": schatten, "ignara": scaled(ignara, 1.32), "thalor": scaled(thalor, 1.32), "nerys": scaled(nerys, 1.3),
        "vexa": scaled(vexa, 1.28), "korrin": scaled(korrin, 1.38), "lyra": scaled(lyra, 1.3), "sylv": scaled(sylv, 1.3)}
 
 

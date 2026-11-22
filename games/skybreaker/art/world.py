@@ -289,6 +289,37 @@ def dungeon_wall(R=5.25):
     return m.vary(0.06, 22), fl
 
 
+def crystal_cave(R=5.25):
+    """Kristallgrotte: zerklüftete Felswand hinten, niedrige Felsen vorne, leuchtende Kristallbüschel"""
+    import random
+    rnd = random.Random(33)
+    m = Mesh()
+    glow = Mesh()
+    ROCK = [rgb(0x2E3048), rgb(0x363A56), rgb(0x282A40), rgb(0x3A3C5C)]
+    CRY = [rgb(0x7AE8FF), rgb(0xB08AFF), rgb(0x5AC8FF), rgb(0xD8A0FF)]
+    seg = 30
+    for k in range(seg):
+        am = 2 * PI * (k + 0.5) / seg
+        front = math.cos(am) > 0.35
+        h = rnd.uniform(0.3, 0.7) if front else rnd.uniform(2.6, 4.0)
+        x, z = math.sin(am) * (R + 0.2), math.cos(am) * (R + 0.2)
+        rock = ico(1.0, rnd.choice(ROCK)).jitter(0.18, 100 + k).scale(0.75, h / 2, 0.6).move(0, h / 2 - 0.1, 0)
+        m += rock.ry(am).move(x, 0, z)
+        if rnd.random() < (0.35 if front else 0.6):
+            cx, cz = math.sin(am) * (R - 0.35), math.cos(am) * (R - 0.35)
+            n = rnd.randint(2, 4)
+            for i in range(n):
+                c = rnd.choice(CRY)
+                hh = rnd.uniform(0.35, 1.0) * (0.5 if front else 1)
+                glow += octa(0.08 + hh * 0.08, hh, c).rz(rnd.uniform(-0.5, 0.5)).rx(rnd.uniform(-0.4, 0.2)).move(cx + rnd.uniform(-0.3, 0.3), hh * 0.6, cz + rnd.uniform(-0.3, 0.3))
+    # Stalaktiten-Andeutung hinten oben
+    for k in range(12):
+        am = PI + rnd.uniform(-1.3, 1.3)
+        x, z = math.sin(am) * (R - 0.3), math.cos(am) * (R - 0.3)
+        m += lathe([(0.0, 0.0), (0.12, 0.9), (0.2, 1.4)], 5, rnd.choice(ROCK)).xf(S(1, -1, 1)).move(x, 4.6, z)
+    return m.vary(0.08, 34), glow
+
+
 def build(out):
     isl = island()
     for i, (x, z) in enumerate([(-1.4, 0.6), (-0.6, 1.5), (1.2, 1.2), (1.7, -0.5), (0.4, -1.3), (-1.6, -0.8)]):
@@ -308,6 +339,9 @@ def build(out):
     parts["arena"], parts["arena_glow"] = arena()
     parts["arena_dark"], _ = arena(dark=True)
     parts["dwall"], parts["dwall_fire"] = dungeon_wall()
+    parts["cave"], parts["cave_glow"] = crystal_cave()
+    a2, _ = arena(dark=True)
+    parts["arena_cave"] = a2.recolor(lambda c, p: (int(c[0] * 0.62), int(c[1] * 0.68), int(c[2] * 0.95), c[3]))
     parts["brazier"], parts["brazier_fire"] = brazier()
     parts["island_plain"] = island(r=2.7, depth=3.4, seg=16, seed=12)
     p, runes = pedestal()

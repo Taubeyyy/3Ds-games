@@ -1,4 +1,5 @@
 // SKYBREAKER – Kampfsystem (Heldin, Gegner-KI, Elemente, Effekte, Raum-Darstellung)
+#include <cstdlib>
 #include "combat.hpp"
 
 Arena AR;
@@ -27,12 +28,21 @@ static const EDef EDEFS[EN_COUNT] = {
 	{28, 3.8f, 0.36f, 22, 1, WM_E_BOMBER_BODY, WM_E_BOMBER_GLOW},
 	{170, 1.7f, 0.6f, 20, 1, WM_E_BRUTE_BODY, WM_E_BRUTE_GLOW},
 	{1500, 1.9f, 1.25f, 26, 2.1f, WM_E_BRUTE_BODY, WM_E_BRUTE_GLOW},
+	{34, 4.0f, 0.36f, 12, 1, WM_E_SPIDER_BODY, WM_E_SPIDER_GLOW},
+	{40, 2.0f, 0.34f, 14, 1, WM_E_ARCHER_BODY, WM_E_ARCHER_GLOW},
+	{120, 1.3f, 0.55f, 16, 1, WM_E_GEODE_BODY, WM_E_GEODE_GLOW},
+	{18, 3.8f, 0.28f, 6, 0.45f, WM_E_GEODE_BODY, WM_E_GEODE_GLOW},
+	{1800, 1.4f, 0.9f, 22, 1, WM_E_QUEEN_BODY, WM_E_QUEEN_GLOW},
 };
 
 // ------------------------------------------------------------------ Effekte
 struct Ghost { Vec3 p; float yaw, t; Pose pose; };
 struct Num { Vec3 p; float t; int v; bool crit; Color c; };
-struct HProj { Vec3 p, v; float life, dmg, r; int kind, god; bool pierce; u32 hitMask; };
+struct HProj { Vec3 p, v; float life, dmg, r; int kind, god; bool pierce; u32 hitMask; int bounces; };
+enum { HK_SHARD, HK_WAVE, HK_BOULDER, HK_DAGGER, HK_BOUNCE, HK_BEAM };
+// Beschwörungen der Götter-Segen
+struct Summon { int kind, god; Vec3 p, v; float t, dur, cd, pow, yaw; bool active; u32 hitMask; };
+enum { SM_TORNADO, SM_WOLF, SM_STAR, SM_CLONE, SM_FIRERING, SM_RING };
 struct EProj { Vec3 p, v; float life, dmg, r; };
 struct SlashFx { Mat4 xf; float t, dur; Color c; };
 struct Tele { Vec3 p; float r, t, dur; Color c; };
@@ -41,7 +51,8 @@ struct Blast { Vec3 p; float r, t, dmg; int god; bool hurtsHero, hurtsEnemies; }
 
 static Ghost g_ghost[8];
 static Num g_num[32];
-static HProj g_hp[12];
+static HProj g_hp[16];
+static Summon g_sum[12];
 static EProj g_ep[24];
 static SlashFx g_slash[10];
 static Tele g_tele[16];
@@ -70,6 +81,22 @@ static void poseFromKeys(const AnimKey *k, int n, float x, Pose &p) {
 	p.bodyTwist = k[i].twist + (k[i + 1].twist - k[i].twist) * u;
 }
 
+static void summon(int kind, int god, Vec3 p, float dur, float pow, float yaw = 0) {
+	for (Summon &m : g_sum) if (!m.active) { m = {kind, god, p, Vec3(), 0, dur, 0, pow, yaw, true, 0}; return; }
+}
+static Enemy *nearestEnemy(Vec3 p, float maxD, const Enemy *skip = nullptr) {
+	Enemy *best = nullptr;
+	float bd = maxD;
+	for (Enemy &e : AR.enemies) {
+		if (!e.alive || e.state == 0 || e.state == 5 || &e == skip || e.type == EN_DUMMY && false) continue;
+		float d = Vec3(e.pos.x - p.x, 0, e.pos.z - p.z).len();
+		if (d < bd) { bd = d; best = &e; }
+	}
+	return best;
+}
+static void shoot(int kind, int god, Vec3 p, Vec3 v, float life, float dmg, float r, bool pierce, int bounces = 0) {
+	for (HProj &q : g_hp) if (q.life <= 0) { q = {p, v, life, dmg, r, kind, god, pierce, 0, bounces}; return; }
+}
 static void spawnSlash(const Mat4 &xf, float dur, Color c) { g_slash[g_slashN] = {xf, 0, dur, c}; g_slashN = (g_slashN + 1) % 10; }
 static void tele(Vec3 p, float r, float dur, Color c) {
 	for (Tele &t : g_tele) if (t.t >= t.dur) { t = {p, r, 0, dur, c}; return; }
@@ -104,6 +131,7 @@ void Arena::newRoom(int seed, bool keepHero) {
 	for (auto &n : g_num) n.t = 9;
 	for (auto &p : g_hp) p.life = 0;
 	for (auto &p : g_ep) p.life = 0;
+	for (auto &m : g_sum) m.active = false;
 	for (auto &s : g_slash) s.t = 9;
 	for (auto &t : g_tele) t.t = t.dur = 0;
 	for (auto &b : g_blast) b.t = 9;
@@ -213,7 +241,7 @@ static void damageEnemy(Enemy &e, float dmg, Vec3 from, int god, float pow, int 
 	e.flash = 1;
 	Vec3 dir = flat(e.pos - from);
 	dir = dir.len() > 0.01f ? dir.norm() : Vec3(0, 0, -1);
-	bool heavyBody = e.type == EN_BRUTE || e.type == EN_BOSS;
+	bool heavyBody = e.type == EN_BRUTE || e.type == EN_BOSS || e.type == EN_QUEEN || e.type == EN_GEODE;
 	if (e.type == EN_DUMMY) { e.wvx += dir.x * ((flags & HF_HEAVY) ? 5.5f : 3.2f); e.wvz += dir.z * ((flags & HF_HEAVY) ? 5.5f : 3.2f); }
 	else if (!heavyBody) {
 		float k = ((flags & HF_HEAVY) ? 6.5f : 3.5f) * (god == CH_NERYS ? 1 + 1.5f * pow : 1);
@@ -281,10 +309,15 @@ static void killEnemy(Enemy &e) {
 	Color c = e.elite ? Color(0xFFD25A) : Color(0xC8A0FF);
 	g_fx.emit(e.pos + Vec3(0, 0.6f * e.scale, 0), 22, UI_P_SPARK, Color(0xFFFFFF), c.alpha(0), 6, 0.6f, 0.3f, 0.05f, 3, Vec3(0, 1, 0), 1);
 	g_fx.emit(e.pos + Vec3(0, 0.4f, 0), 10, UI_P_WISP, Color(0x6A5AA0, 0.6f), Color(0x2A1A40, 0), 2, 0.8f, 0.4f, 0.9f, -1);
-	int coins = (e.type == EN_BRUTE ? 4 : e.type == EN_BOSS ? 0 : 1) + (e.elite ? 5 : 0);
+	int coins = (e.type == EN_BRUTE || e.type == EN_GEODE ? 4 : e.type == EN_BOSS || e.type == EN_QUEEN || e.type == EN_GEODELET ? 0 : 1) + (e.elite ? 5 : 0);
 	a.coinsGained += int(coins * a.mods.coinMul + 0.5f);
 	if (coins) g_fx.emit(e.pos + Vec3(0, 0.6f, 0), coins + 2, UI_P_EMBER, Color(0xFFE070), Color(0xFFB030, 0), 3, 0.7f, 0.12f, 0.05f, 8, Vec3(0, 1, 0), 0.8f);
 	sfx(A.hitHeavy, 0.7f, 0.6f);
+	if (e.type == EN_GEODE)
+		for (int k = 0; k < 3; k++) {
+			int id = a.spawn(EN_GEODELET, e.pos + fwd(k * 2.1f) * 0.5f, false, 0);
+			if (id >= 0) { a.enemies[id].state = 1; a.enemies[id].st = 0; a.enemies[id].vel = fwd(k * 2.1f) * 4; }
+		}
 	if (a.mods.passive[CH_SYLV] && e.poison > 0)
 		for (Enemy &o : a.enemies)
 			if (o.alive && &o != &e && (o.pos - e.pos).len() < 2.6f) { o.poison = o.poison < 5 ? o.poison + 2 : 5; o.poisonT = 4; }
@@ -295,6 +328,10 @@ static void hurtHero(float dmg, Vec3 from) {
 	Arena::Hero &h = a.hero;
 	if (a.training || h.dead > 0) return;
 	if (h.iframe > 0 || h.act == ACT_DASH) return;
+#ifndef __3DS__
+	static bool godMode = getenv("SKY_GOD") != nullptr;   // nur PC-Tests
+	if (godMode) return;
+#endif
 	if (h.armorT > 0) dmg *= 0.6f;
 	dmg *= a.dmgMulRoom;
 	h.hp -= dmg;
@@ -523,6 +560,112 @@ static void updateEnemy(Enemy &e, float dt) {
 		} else if (e.state == 4) { if (e.st > (boss ? 1.0f : 0.9f)) { e.state = 1; e.cd = boss ? 0.6f : g_r.range(0.5f, 1.2f); } }
 		break;
 	}
+	case EN_SPIDER: {
+		if (e.state == 1) {
+			want = dirH * spd + Vec3(-dirH.z, 0, dirH.x) * (sinf(e.bob * 3) * spd * 0.4f);
+			faceH(10);
+			if (dist < 3.8f && dist > 1.2f && e.cd <= 0 && !heroDown) { e.state = 2; e.st = 0; }
+		} else if (e.state == 2) {
+			faceH(14);
+			if (e.st > 0.35f) {
+				e.state = 3; e.st = 0; e.hitDone = false;
+				e.from = e.pos;
+				e.aim = h.pos + flat(h.vel) * 0.25f;
+				tele(e.aim, 1.0f, 0.45f, Color(0xFF4A8A, 0.55f));
+			}
+		} else if (e.state == 3) {
+			float u = clampf(e.st / 0.45f, 0, 1);
+			Vec3 p = e.from + (e.aim - e.from) * u;
+			e.pos.x = p.x; e.pos.z = p.z;
+			e.air = sinf(PI * u) * 1.3f;
+			e.vel = Vec3();
+			if (u >= 1) {
+				e.air = 0;
+				blast(e.pos, 1.0f, e.dmg, -1, true, false);
+				g_fx.emit(e.pos + Vec3(0, 0.1f, 0), 10, UI_P_SPARK, Color(0xB0F0FF), Color(0x8A6AFF, 0), 4, 0.4f, 0.2f, 0.04f, 3, Vec3(0, 1, 0), 1);
+				e.state = 4; e.st = 0;
+			}
+			return;
+		} else if (e.state == 4) { if (e.st > 0.7f) { e.state = 1; e.cd = g_r.range(1.0f, 1.8f); } }
+		break;
+	}
+	case EN_ARCHER: {
+		if (e.state == 1) {
+			if (dist < 4.5f) want = dirH * -spd;
+			else if (dist > 7) want = dirH * spd;
+			else want = Vec3(-dirH.z, 0, dirH.x) * (spd * 0.5f * (sinf(e.bob * 0.6f) > 0 ? 1 : -1));
+			faceH(6);
+			if (e.cd <= 0 && dist < 10 && !heroDown) { e.state = 2; e.st = 0; }
+		} else if (e.state == 2) {
+			if (e.st < 0.55f) { faceH(12); e.aim = fwd(e.yaw); }        // zielen, dann festhalten
+			if (e.st > 0.85f) {
+				for (EProj &p : g_ep) if (p.life <= 0) { p = {e.pos + Vec3(0, 1.0f, 0) + e.aim * 0.5f, e.aim * 16.0f, 1.0f, e.dmg, 0.2f}; break; }
+				sfx(A.cast, 1.4f, 0.5f);
+				e.state = 4; e.st = 0;
+			}
+		} else if (e.state == 4) { if (e.st > 0.5f) { e.state = 1; e.cd = g_r.range(1.6f, 2.4f); } }
+		break;
+	}
+	case EN_GEODE:
+	case EN_GEODELET: {
+		bool small = e.type == EN_GEODELET;
+		if (e.state == 1) {
+			want = dirH * spd;
+			faceH(small ? 10 : 5);
+			if (dist < (small ? 0.95f : 1.6f) && e.cd <= 0 && !heroDown) {
+				e.state = 2; e.st = 0;
+				if (!small) tele(e.pos + dirH * 0.8f, 1.3f, 0.7f, Color(0xD08AFF, 0.5f));
+				e.aim = e.pos + dirH * 0.8f;
+			}
+		} else if (e.state == 2) {
+			if (e.st > (small ? 0.25f : 0.7f)) {
+				if (small) { if (dist < e.r + 0.6f) hurtHero(e.dmg, e.pos); }
+				else { blast(e.aim, 1.3f, e.dmg, -1, true, false); sfx(A.hitHeavy, 0.7f, 0.6f); }
+				e.state = 4; e.st = 0;
+			}
+		} else if (e.state == 4) { if (e.st > (small ? 0.45f : 0.9f)) { e.state = 1; e.cd = g_r.range(0.4f, 1.0f); } }
+		break;
+	}
+	case EN_QUEEN: {
+		e.air = 0.35f + 0.15f * sinf(e.bob * 1.5f);
+		if (e.state == 1) {
+			if (dist > 4.5f) want = dirH * spd; else if (dist < 2.5f) want = dirH * -spd;
+			faceH(4);
+			if (e.cd <= 0 && !heroDown) { e.state = 2; e.st = 0; e.attackN++; }
+		} else if (e.state == 2) {
+			faceH(6);
+			int pat = e.attackN % 4;
+			if (pat == 0 && e.st > 0.6f) {                                 // Kristallregen
+				for (int k = 0; k < 6; k++) {
+					Vec3 p = h.pos + Vec3(g_r.range(-2.6f, 2.6f), 0, g_r.range(-2.6f, 2.6f));
+					if (k == 0) p = h.pos;
+					tele(p, 1.0f, 1.0f + k * 0.12f, Color(0xB08AFF, 0.5f));
+					for (Blast &b : g_blast) if (b.t >= 0.35f) { b = {p, 1.0f, -(1.0f + k * 0.12f), e.dmg * 0.8f, -1, true, false}; break; }
+				}
+				e.state = 4; e.st = 0;
+			} else if (pat == 1 && e.st > 0.8f) {                          // Splitterkranz
+				float off = g_r.range(0, 0.5f);
+				for (int k = 0; k < 14; k++) {
+					float yy = off + k * 2 * PI / 14;
+					for (EProj &p : g_ep) if (p.life <= 0) { p = {e.pos + Vec3(0, 1.0f, 0) + fwd(yy) * 0.6f, fwd(yy) * 5.5f, 2.5f, e.dmg * 0.6f, 0.22f}; break; }
+				}
+				sfx(A.cast, 0.7f, 0.7f);
+				e.state = 4; e.st = 0;
+			} else if (pat == 2 && e.st > 0.7f) {                          // Spinnen rufen
+				for (int k = 0; k < 3; k++) a.spawn(EN_SPIDER, e.pos + fwd(e.yaw + k * 2.1f) * 2.2f, false, k * 0.2f);
+				e.state = 4; e.st = 0;
+			} else if (pat == 3 && e.st > 0.5f) {                          // Sprung durch den Raum
+				float aa = g_r.range(0, 2 * PI);
+				Vec3 np(sinf(aa) * 2.8f, 0.075f, cosf(aa) * 2.8f);
+				g_fx.emit(e.pos + Vec3(0, 1, 0), 20, UI_P_SPARK, Color(0xFFFFFF), Color(0xB08AFF, 0), 5, 0.5f, 0.3f, 0, 0, Vec3(), 1);
+				e.pos = np;
+				g_fx.emit(np + Vec3(0, 1, 0), 20, UI_P_SPARK, Color(0xFFFFFF), Color(0x8AE8FF, 0), 5, 0.5f, 0.3f, 0, 0, Vec3(), 1);
+				sfx(A.dash, 0.6f, 0.6f);
+				e.state = 4; e.st = 0;
+			}
+		} else if (e.state == 4) { if (e.st > 0.8f) { e.state = 1; e.cd = 0.4f; } }
+		break;
+	}
 	}
 	e.vel = e.vel + (want - e.vel) * fminf(1, dt * 8);
 	e.pos += e.vel * dt;
@@ -585,12 +728,13 @@ void Arena::update(float dt, const Input &in) {
 		h.strikeQueued = false;
 		h.act = ACT_DASH;
 		h.actT = 0;
-		h.actDur = 0.17f;
+		h.actDur = 0.2f;
 		h.dashDir = wish.len() > 0.2f ? wish.norm() : fwd(h.yaw);
 		h.yaw = atan2f(h.dashDir.x, h.dashDir.z);
 		h.ghostTimer = 0;
-		sfx(A.dash, g_r.range(0.95f, 1.1f), 0.7f);
-		g_fx.emit(h.pos + Vec3(0, 0.1f, 0), 10, UI_P_WISP, Color(0xE8E0D0, 0.6f), Color(0xE8E0D0, 0), 2.5f, 0.5f, 0.35f, 0.7f, -0.5f, -h.dashDir + Vec3(0, 0.3f, 0), 0.8f);
+		sfx(A.dash, g_r.range(0.65f, 0.75f), 0.8f);
+		g_fx.emit(h.pos + Vec3(0, 0.3f, 0), 12, UI_P_WISP, Color(0x3A2060, 0.85f), Color(0x120820, 0), 2.0f, 0.55f, 0.4f, 0.8f, -1.2f, Vec3(0, 1, 0), 0.9f);
+		g_fx.emit(h.pos + Vec3(0, 0.2f, 0), 8, UI_P_SPARK, Color(0xC8A0FF), Color(0x6A3AC0, 0), 3, 0.35f, 0.18f, 0.02f, 0, Vec3(0, 1, 0), 1);
 		dashElement(true);
 	} else if (h.act == ACT_DASH) {
 		if (in.pressed(KEY_A)) h.strikeQueued = true;
@@ -633,7 +777,7 @@ void Arena::update(float dt, const Input &in) {
 				hitArc(rng, c == 2 ? 0.75f : 1.35f, dm, ag, ap, c == 2 ? HF_HEAVY : 0, ac);
 				if (c == 2 && mods.finisher) { blast(h.pos + fwd(h.yaw) * 1.2f, 1.8f, 16, ag, false, true); }
 				if (mods.bladeWave)
-					for (HProj &p : g_hp) if (p.life <= 0) { p = {h.pos + Vec3(0, 0.9f, 0) + fwd(h.yaw) * 0.6f, fwd(h.yaw) * 12, 0.38f, dm * 0.5f, 0.6f, 1, ag, true, 0}; break; }
+					for (HProj &p : g_hp) if (p.life <= 0) { p = {h.pos + Vec3(0, 0.9f, 0) + fwd(h.yaw) * 0.6f, fwd(h.yaw) * 12, 0.38f, dm * 0.5f, 0.6f, HK_WAVE, ag, true, 0, 0}; break; }
 				if (c == 2) {
 					g_fx.emit(h.pos + fwd(h.yaw) * 1.3f + Vec3(0, 0.05f, 0), 12, UI_P_DUST, Color(0xD8E8FF), ac.alpha(0), 4, 0.5f, 0.12f, 0.05f, 6, Vec3(0, 1, 0), 1.2f);
 					if (S.shake) g_shake = fmaxf(g_shake, 0.18f);
@@ -656,9 +800,30 @@ void Arena::update(float dt, const Input &in) {
 			if ((!h.hitDone && x > 0.3f) || second) {
 				if (second) h.combo = 9; else h.hitDone = true;
 				Mat4 base = Mat4::translate(h.pos + Vec3(0, 0.95f, 0));
-				for (int i = 0; i < 3; i++) spawnSlash(base * Mat4::rotY(h.yaw + i * 2.09f + x * 3) * Mat4::scale(Vec3(2.3f, 1, 2.3f)), 0.3f, sc);
-				hitRadius(h.pos, 2.4f, 34 * mods.specialMul, sg, mods.slotPow[SL_SPECIAL], HF_HEAVY, sc);
+				for (int i = 0; i < 3; i++) spawnSlash(base * Mat4::rotY(h.yaw + i * 2.09f + x * 3) * Mat4::scale(Vec3(2.3f, 1, 2.3f)), 0.3f, sc.alpha(0.5f));
+				float sp = mods.slotPow[SL_SPECIAL];
+				hitRadius(h.pos, 2.4f, 34 * mods.specialMul, sg, sp, HF_HEAVY, sc);
 				g_fx.emit(h.pos + Vec3(0, 0.9f, 0), 18, UI_P_SPARK, sc.lighten(0.4f), sc.alpha(0), 8, 0.4f, 0.22f, 0, 0, Vec3(), 1);
+				switch (sg) {
+				case CH_IGNARA: summon(SM_FIRERING, sg, h.pos, 2.5f, sp); break;
+				case CH_THALOR: summon(SM_TORNADO, sg, h.pos + fwd(h.yaw) * 1.2f, 3.0f + sp, sp); break;
+				case CH_NERYS:
+					for (Enemy &e : enemies) if (e.alive && e.type != EN_BOSS && e.type != EN_QUEEN && flat(e.pos - h.pos).len() < 4.0f) { e.vel = flat(h.pos - e.pos).norm() * 7; e.slowT = 2.5f; }
+					g_fx.emit(h.pos + Vec3(0, 0.3f, 0), 24, UI_P_BUBBLE, Color(0xB0FFFF), Color(0x3CDCD2, 0), 6, 0.6f, 0.22f, 0.1f, 0, Vec3(), 1);
+					break;
+				case CH_VEXA:
+					summon(SM_CLONE, sg, h.pos + fwd(h.yaw + PI / 2) * 1.7f, 0.5f, sp, h.yaw);
+					summon(SM_CLONE, sg, h.pos + fwd(h.yaw - PI / 2) * 1.7f, 0.5f, sp, h.yaw);
+					break;
+				case CH_KORRIN: summon(SM_RING, sg, h.pos, 0.45f, sp); if (S.shake) g_shake = fmaxf(g_shake, 0.3f); break;
+				case CH_LYRA:
+					for (int k = 0; k < 6; k++) shoot(HK_BEAM, sg, h.pos + Vec3(0, 0.9f, 0), fwd(h.yaw + k * PI / 3) * 14, 0.45f, 18 * sp, 0.4f, true);
+					break;
+				case CH_SYLV:
+					for (Enemy &e : enemies) if (e.alive && flat(e.pos - h.pos).len() < 2.6f) { e.rootT = 2.0f; e.poison = e.poison < 5 ? e.poison + 1 : 5; e.poisonT = 4; }
+					g_fx.emit(h.pos + Vec3(0, 0.2f, 0), 20, UI_P_LEAF, Color(0xB0FF80), Color(0x3E8A3A, 0), 4, 0.8f, 0.2f, 0.15f, 2, Vec3(), 1);
+					break;
+				}
 			}
 			if (x >= 1) { h.act = ACT_NONE; h.specialCd = mods.specialCd; h.pose.bodyTwist = 0; h.combo = 0; }
 			break;
@@ -671,10 +836,28 @@ void Arena::update(float dt, const Input &in) {
 				h.hitDone = true;
 				h.castCharges--;
 				int n = mods.fanCast ? 3 : 1;
-				for (int i = 0; i < n; i++) {
-					float yy = h.yaw + (i - (n - 1) * 0.5f) * 0.25f;
-					for (HProj &p : g_hp)
-						if (p.life <= 0) { p = {h.pos + Vec3(0, 1.15f, 0) + fwd(yy) * 0.5f, fwd(yy) * 17, 0.7f, 40 * mods.castMul, 0.5f, 0, mods.slotGod[SL_CAST], false, 0}; break; }
+				int cg = mods.slotGod[SL_CAST];
+				float cp = mods.slotPow[SL_CAST], cd = 40 * mods.castMul;
+				Vec3 hand = h.pos + Vec3(0, 1.15f, 0);
+				switch (cg) {
+				case CH_THALOR:                                            // Blitz schlägt im nächsten Gegner ein (zielsuchend)
+					for (int i = 0; i < n; i++) {
+						Enemy *t = nearestEnemy(h.pos, 9);
+						Vec3 at = t ? t->pos : h.pos + fwd(h.yaw) * 3;
+						g_bolt[g_boltN] = {at + Vec3(0, 6, 0), at + Vec3(0, 0.3f, 0), 0, Color(0xFFF07A)};
+						g_boltN = (g_boltN + 1) % 8;
+						if (t) damageEnemy(*t, cd * 1.1f * cp, h.pos, CH_THALOR, cp, HF_HEAVY, Color(0xFFF07A));
+						blast(at, 1.3f, 12 * cp, CH_THALOR, false, true);
+					}
+					sfx(A.hitHeavy, 1.4f, 0.8f);
+					break;
+				case CH_NERYS: for (int i = 0; i < n; i++) shoot(HK_BOUNCE, cg, hand + fwd(h.yaw) * 0.5f, fwd(h.yaw + (i - (n - 1) * 0.5f) * 0.25f) * 15, 1.2f, cd * 0.8f, 0.45f, false, 3); break;
+				case CH_VEXA: for (int i = 0; i < 3 * n; i++) shoot(HK_DAGGER, cg, hand + fwd(h.yaw) * 0.4f, fwd(h.yaw + (i - (3 * n - 1) * 0.5f) * 0.35f) * 11, 1.4f, cd * 0.45f * cp, 0.35f, false); break;
+				case CH_KORRIN: for (int i = 0; i < n; i++) shoot(HK_BOULDER, cg, h.pos + Vec3(0, 0.55f, 0) + fwd(h.yaw) * 0.7f, fwd(h.yaw + (i - (n - 1) * 0.5f) * 0.3f) * 8.5f, 1.2f, cd * 1.25f * cp, 0.65f, true); break;
+				case CH_LYRA: summon(SM_STAR, cg, h.pos, 6 + cp * 2, cp); if (n > 1) summon(SM_STAR, cg, h.pos, 6 + cp * 2, cp, PI); break;
+				case CH_SYLV: summon(SM_WOLF, cg, h.pos + fwd(h.yaw) * 0.8f, 8 + cp * 2, cp, h.yaw); break;
+				default:
+					for (int i = 0; i < n; i++) shoot(HK_SHARD, cg, hand + fwd(h.yaw) * 0.5f, fwd(h.yaw + (i - (n - 1) * 0.5f) * 0.25f) * 17, 0.7f, cd, 0.5f, false);
 				}
 				sfx(A.cast, g_r.range(0.95f, 1.08f), 0.8f);
 			}
@@ -682,11 +865,15 @@ void Arena::update(float dt, const Input &in) {
 			break;
 		}
 		case ACT_DASH: {
-			h.pos += h.dashDir * (23.0f * dt);
+			h.pos += h.dashDir * (20.0f * dt);
+			h.pose.sink = 1.9f * clampf(fminf(h.actT / 0.035f, (h.actDur - h.actT) / 0.045f), 0, 1);
 			h.ghostTimer -= dt;
 			if (h.ghostTimer <= 0) { h.ghostTimer = 0.035f; g_ghost[g_ghostN] = {h.pos, h.yaw, 0, h.pose}; g_ghostN = (g_ghostN + 1) % 8; }
 			h.pose.capeLift = 0.9f;
-			if (h.actT >= h.actDur) { h.act = ACT_NONE; h.dashCd = 0.1f; h.vel = h.dashDir * 4; h.afterDash = 0; dashElement(false); }
+			if (h.actT >= h.actDur) {
+				h.act = ACT_NONE; h.dashCd = 0.1f; h.vel = h.dashDir * 4; h.afterDash = 0; h.pose.sink = 0; dashElement(false);
+				g_fx.emit(h.pos + Vec3(0, 0.2f, 0), 12, UI_P_WISP, Color(0x3A2060, 0.8f), Color(0x120820, 0), 2.2f, 0.5f, 0.35f, 0.7f, -1.5f, Vec3(0, 1, 0), 0.9f);
+			}
 			moveK = 0;
 			break;
 		}
@@ -716,6 +903,11 @@ void Arena::update(float dt, const Input &in) {
 		float want = h.act == ACT_NONE ? clampf(spd / 5.0f, 0, 1) : 0;
 		h.runK += (want - h.runK) * fminf(1, dt * 10);
 		h.runPhase += dt * (4 + spd * 1.6f);
+		bool atk = h.act == ACT_ATTACK || h.act == ACT_DSTRIKE || h.act == ACT_CAST;
+		float legT = sinf(h.runPhase) * 0.75f * h.runK + (atk ? 0.38f : 0) + (h.act == ACT_SPECIAL ? 0.25f : 0);
+		float armT = sinf(h.runPhase) * 0.6f * h.runK + (atk ? 0.5f : 0) + (h.act == ACT_SPECIAL ? 1.2f : 0);
+		h.pose.legSwing += (legT - h.pose.legSwing) * fminf(1, dt * 18);
+		h.pose.armSwingL += (armT - h.pose.armSwingL) * fminf(1, dt * 16);
 	}
 	if (h.act == ACT_NONE) {
 		h.pose.armYaw += (-0.15f * h.runK - h.pose.armYaw) * fminf(1, dt * 12);
@@ -777,20 +969,93 @@ void Arena::update(float dt, const Input &in) {
 	for (HProj &p : g_hp) {
 		if (p.life <= 0) continue;
 		p.life -= dt;
+		if (p.kind == HK_DAGGER) {
+			Enemy *t = nearestEnemy(p.p, 6);
+			if (t) { Vec3 want = flat(t->pos - p.p).norm() * 11; p.v = p.v + (want - p.v) * fminf(1, dt * 7); }
+		}
 		p.p += p.v * dt;
 		Color pc(p.god >= 0 ? godColor(p.god) : 0x6AD8FF);
-		if (g_r.f() < 0.6f) g_fx.emit(p.p, 1, UI_P_SPARK, pc.lighten(0.6f).alpha(0.9f), pc.alpha(0), 0.5f, 0.3f, p.kind ? 0.3f : 0.16f, 0.02f);
+		if (g_r.f() < 0.6f) g_fx.emit(p.p, 1, p.kind == HK_BOULDER ? UI_P_DUST : UI_P_SPARK, pc.lighten(0.6f).alpha(0.9f), pc.alpha(0), 0.5f, 0.3f, p.kind == HK_WAVE ? 0.3f : 0.16f, 0.02f);
 		for (int i = 0; i < 24; i++) {
 			Enemy &e = enemies[i];
 			if (!e.alive || e.state == 0 || e.state == 5 || (p.hitMask & (1u << i))) continue;
 			if (flat(p.p - e.pos).len() < e.r + p.r) {
 				p.hitMask |= 1u << i;
-				damageEnemy(e, p.dmg, p.p - p.v * 0.1f, p.god, mods.slotPow[SL_CAST], p.kind ? HF_NOSTOP : 0, pc);
-				if (p.god == CH_IGNARA && !p.kind) blast(p.p, 1.5f, 18 * mods.slotPow[SL_CAST], CH_IGNARA, false, true);
+				damageEnemy(e, p.dmg, p.p - p.v * 0.1f, p.god, mods.slotPow[SL_CAST], p.kind == HK_SHARD || p.kind == HK_BOULDER ? 0 : HF_NOSTOP, pc);
+				if (p.god == CH_IGNARA && p.kind == HK_SHARD) blast(p.p, 1.5f, 18 * mods.slotPow[SL_CAST], CH_IGNARA, false, true);
+				if (p.kind == HK_BOULDER && e.type != EN_BOSS && e.type != EN_QUEEN) e.vel = e.vel + flat(p.v).norm() * 6;
+				if (p.kind == HK_BOUNCE && p.bounces > 0) {
+					Enemy *nt = nearestEnemy(p.p, 5.5f, &e);
+					if (nt) { p.bounces--; p.v = flat(nt->pos - p.p).norm() * 15; p.hitMask = 1u << i; p.life = 1.0f; sfx(A.select, 1.5f, 0.3f); break; }
+				}
 				if (!p.pierce) { g_fx.emit(p.p, 14, UI_P_SPARK, Color(0xFFFFFF), pc.alpha(0), 6, 0.4f, 0.26f, 0); p.life = 0; break; }
 			}
 		}
 		if (flat(p.p).len() > radius + 1.5f) p.life = 0;
+	}
+	// Beschwörungen
+	for (Summon &m : g_sum) {
+		if (!m.active) continue;
+		m.t += dt;
+		m.cd -= dt;
+		if (m.t >= m.dur) { m.active = false; continue; }
+		Color mc(godColor(m.god));
+		switch (m.kind) {
+		case SM_TORNADO: {
+			Enemy *t = nearestEnemy(m.p, 8);
+			Vec3 want = t ? flat(t->pos - m.p).norm() * 3.2f : Vec3();
+			m.v = m.v + (want - m.v) * fminf(1, dt * 3);
+			m.p += m.v * dt;
+			if (m.cd <= 0) {
+				m.cd = 0.3f;
+				for (Enemy &e : enemies)
+					if (e.alive && e.state != 0 && e.state != 5 && flat(e.pos - m.p).len() < 1.5f) {
+						damageEnemy(e, 7 * m.pow, m.p, CH_THALOR, m.pow, HF_NOSTOP | HF_NOCHAIN, mc);
+						if (e.type != EN_BOSS && e.type != EN_QUEEN && e.type != EN_BRUTE) e.vel = e.vel + flat(m.p - e.pos).norm() * 3;
+					}
+			}
+			if (g_r.f() < 0.7f) g_fx.emit(m.p + Vec3(g_r.range(-0.4f, 0.4f), g_r.range(0.2f, 1.8f), g_r.range(-0.4f, 0.4f)), 1, UI_P_WISP, Color(0xD8E8FF, 0.5f), Color(0x8AA8FF, 0), 1.5f, 0.4f, 0.25f, 0.4f, -1);
+			break;
+		}
+		case SM_WOLF: {
+			Enemy *t = nearestEnemy(m.p, 12);
+			if (t) {
+				Vec3 d = flat(t->pos - m.p);
+				m.yaw = atan2f(d.x, d.z);
+				if (d.len() > t->r + 0.5f) m.p += d.norm() * (6.5f * dt);
+				else if (m.cd <= 0) { m.cd = 0.55f; damageEnemy(*t, 14 * m.pow, m.p, CH_SYLV, m.pow, HF_NOSTOP, Color(0x9AFFC0)); }
+			} else {
+				Vec3 d = flat(h.pos + fwd(h.yaw + 2.2f) * 1.2f - m.p);
+				if (d.len() > 0.3f) { m.p += d.norm() * (5.5f * dt); m.yaw = atan2f(d.x, d.z); }
+			}
+			break;
+		}
+		case SM_STAR: {
+			float a = m.t * 4 + m.yaw;
+			m.p = h.pos + Vec3(cosf(a) * 1.6f, 1.0f, sinf(a) * 1.6f);
+			if (m.cd <= 0)
+				for (Enemy &e : enemies)
+					if (e.alive && e.state != 0 && e.state != 5 && flat(e.pos - m.p).len() < e.r + 0.45f) { damageEnemy(e, 12 * m.pow, m.p, CH_LYRA, m.pow, HF_NOSTOP, mc); m.cd = 0.18f; break; }
+			break;
+		}
+		case SM_CLONE:
+			if (m.cd > -1 && m.t > 0.22f) { m.cd = -9; hitRadius(m.p, 1.9f, 26 * m.pow, CH_VEXA, m.pow, HF_NOSTOP, mc); g_fx.emit(m.p + Vec3(0, 0.9f, 0), 12, UI_P_WISP, Color(0x6A3AA0, 0.7f), Color(0x2A1040, 0), 3, 0.4f, 0.3f, 0.5f); }
+			break;
+		case SM_FIRERING:
+			if (m.cd <= 0) { m.cd = 0.4f; hitRadius(m.p, 2.4f, 6 * m.pow, CH_IGNARA, m.pow, HF_NOSTOP | HF_NONUM, mc); }
+			if (g_r.f() < 0.8f) { float a = g_r.range(0, 6.28f), r = g_r.range(0.3f, 2.4f); g_fx.emit(m.p + Vec3(cosf(a) * r, 0.15f, sinf(a) * r), 1, UI_P_EMBER, Color(0xFFD070), Color(0xFF4A1E, 0), 1.0f, 0.6f, 0.12f, 0.03f, -2, Vec3(0, 1, 0), 0.4f); }
+			break;
+		case SM_RING: {
+			float r = 0.5f + m.t / m.dur * 3.8f;
+			for (int i = 0; i < 24; i++) {
+				Enemy &e = enemies[i];
+				if (!e.alive || (m.hitMask & (1u << i))) continue;
+				float d = flat(e.pos - m.p).len();
+				if (fabsf(d - r) < e.r + 0.35f) { m.hitMask |= 1u << i; damageEnemy(e, 30 * m.pow, m.p, CH_KORRIN, m.pow, HF_NOSTOP, mc); }
+			}
+			break;
+		}
+		}
 	}
 	// Projektile der Gegner
 	for (EProj &p : g_ep) {
@@ -870,7 +1135,7 @@ static void drawEnemy(const Enemy &e, float t) {
 	float rise = 0, k = 1;
 	if (e.state == 0) { float u = clampf(e.st / 0.8f, 0, 1); rise = -(1 - u) * 1.2f; k = 0.3f + 0.7f * u; }
 	if (e.state == 5) { float u = clampf(e.st / 0.45f, 0, 1); k = 1 - u; rise = -u * 0.4f; m.emission = Color(0x000000).mix(Color(0xFFFFFF), 1 - u); }
-	float hover = e.type == EN_WISP ? 0.25f + 0.12f * sinf(e.bob * 2.5f) : 0;
+	float hover = (e.type == EN_WISP ? 0.25f + 0.12f * sinf(e.bob * 2.5f) : 0) + e.air;
 	float squash = (e.state == 2 ? 0.92f : 1) * (e.type == EN_CRAWLER || e.type == EN_BOMBER ? 1 + 0.06f * sinf(e.bob * 18) : 1 + 0.02f * sinf(e.bob * 3));
 	float lean = e.state == 3 ? 0.35f : e.state == 2 ? -0.18f : 0;
 	float moving = clampf(Vec3(e.vel.x, 0, e.vel.z).len() / 2.5f, 0, 1);
@@ -889,6 +1154,7 @@ static void drawEnemy(const Enemy &e, float t) {
 		return;
 	}
 	if (e.type == EN_BOSS) m.emission = fl > 0 ? m.emission : Color(0x200808);
+	if (e.type == EN_QUEEN && fl <= 0) m.emission = Color(0x10102A);
 	gfx3d::draw(A.world[d.body], xf, m);
 	if (d.glow >= 0) {
 		Material g;
@@ -900,7 +1166,7 @@ static void drawEnemy(const Enemy &e, float t) {
 
 void Arena::draw(Gfx &g) {
 	float t = time;
-	g.rectGrad(0, 0, 400, 240, Color(0x040308), Color(0x100C18), 10.5f);
+	g.rectGrad(0, 0, 400, 240, Color(biome == 1 ? 0x03050C : 0x040308), Color(biome == 1 ? 0x0A1020 : 0x100C18), 10.5f);
 	Hero &h = hero;
 	Vec3 sh;
 	if (g_shake > 0) sh = Vec3(g_r.range(-1, 1), g_r.range(-1, 1), g_r.range(-1, 1)) * (g_shake * 0.16f);
@@ -924,7 +1190,12 @@ void Arena::draw(Gfx &g) {
 			if (d < best[0]) { best[1] = best[0]; bp[1] = bp[0]; best[0] = d; bp[0] = p; }
 			else if (d < best[1]) { best[1] = d; bp[1] = p; }
 		}
-		for (int i = 0; i < 2; i++) { Light3D l; l.point = true; l.pos = bp[i]; l.color = Color(0xFFA050); l.intensity = 1.2f + 0.12f * sinf(t * 11 + i * 3); l.range = 5.5f; sc.lights[sc.nLights++] = l; }
+		for (int i = 0; i < 2; i++) {
+			Light3D l; l.point = true; l.pos = bp[i]; l.range = 5.5f;
+			if (biome == 1) { l.color = Color(i ? 0xB08AFF : 0x6AD8FF); l.intensity = 1.1f + 0.2f * sinf(t * 1.3f + i * 2); l.pos.y = 1.0f; }
+			else { l.color = Color(0xFFA050); l.intensity = 1.2f + 0.12f * sinf(t * 11 + i * 3); }
+			sc.lights[sc.nLights++] = l;
+		}
 	}
 	Light3D star; star.point = true; star.pos = h.pos + Vec3(0.1f, 1.25f, 0.2f); star.color = Color(0x8AF0FF); star.intensity = 0.6f; star.range = 1.6f;
 	sc.lights[sc.nLights++] = star;
@@ -933,7 +1204,7 @@ void Arena::draw(Gfx &g) {
 	for (const HProj &p : g_hp)
 		if (p.life > 0 && sc.nLights < 8) { Light3D l; l.point = true; l.pos = p.p; l.color = Color(p.god >= 0 ? godColor(p.god) : 0x6AD8FF); l.intensity = 1.5f; l.range = 3; sc.lights[sc.nLights++] = l; }
 	sc.fog = true;
-	sc.fogColor = Color(0x08060E);
+	sc.fogColor = Color(biome == 1 ? 0x060A16 : 0x08060E);
 	sc.fogNear = 9; sc.fogFar = 26;
 	gfx3d::begin(g, cam, sc);
 	Material lit;
@@ -941,9 +1212,14 @@ void Arena::draw(Gfx &g) {
 	Material al = lit;
 	al.specular = 0.3f;
 	al.color = floorTint;
-	gfx3d::draw(A.world[WM_ARENA_DARK], Mat4::identity(), al);
-	gfx3d::draw(A.world[WM_DWALL], Mat4::identity(), lit);
-	{
+	if (biome == 1) {
+		gfx3d::draw(A.world[WM_ARENA_CAVE], Mat4::identity(), al);
+		gfx3d::draw(A.world[WM_CAVE], Mat4::identity(), lit);
+		Material cg; cg.lit = false; cg.color = Color(0xFFFFFF).mix(Color(0xC8D8FF), 0.5f + 0.5f * sinf(t * 1.2f));
+		gfx3d::draw(A.world[WM_CAVE_GLOW], Mat4::identity(), cg);
+	} else {
+		gfx3d::draw(A.world[WM_ARENA_DARK], Mat4::identity(), al);
+		gfx3d::draw(A.world[WM_DWALL], Mat4::identity(), lit);
 		Material wf; wf.lit = false;
 		float fl = 1 + 0.07f * sinf(t * 14) + 0.04f * sinf(t * 31);
 		gfx3d::draw(A.world[WM_DWALL_FIRE], Mat4::translate(Vec3(0, 2.18f, 0)) * Mat4::scale(Vec3(1, fl, 1)) * Mat4::translate(Vec3(0, -2.18f, 0)), wf);
@@ -1023,7 +1299,17 @@ void Arena::draw(Gfx &g) {
 	for (const Enemy &e : enemies) if (e.alive) drawEnemy(e, t);
 	// Heldin
 	for (const Ghost &gh : g_ghost)
-		if (gh.t < 0.22f) drawGhost(CH_SEREN, Mat4::translate(gh.p) * Mat4::rotY(gh.yaw), &gh.pose, Color(0x6AD8FF, 0.45f * (1 - gh.t / 0.22f)));
+		if (gh.t < 0.35f) {
+			float k = 1 - gh.t / 0.35f;
+			Material pm; pm.lit = false; pm.color = Color(0x08040E, 0.55f * k);
+			gfx3d::draw(A.disc, Mat4::translate(gh.p + Vec3(0, 0.085f, 0)) * Mat4::scale(Vec3(0.45f * k + 0.1f, 1, 0.45f * k + 0.1f)), pm);
+		}
+	if (h.act == ACT_DASH) {
+		Material pm; pm.lit = false; pm.color = Color(0x8A5AFF, 0.45f);
+		gfx3d::draw(A.disc, Mat4::translate(h.pos + Vec3(0, 0.088f, 0)) * Mat4::scale(Vec3(0.68f, 1, 0.68f)), pm);
+		pm.color = Color(0x06030C, 0.85f);
+		gfx3d::draw(A.disc, Mat4::translate(h.pos + Vec3(0, 0.092f, 0)) * Mat4::scale(Vec3(0.55f, 1, 0.55f)), pm);
+	}
 	bool blink = h.iframe > 0 && h.act != ACT_DASH && fmodf(t * 20, 2) < 1;
 	if (!blink) {
 		float fall = h.dead > 0 ? clampf(h.dead * 2, 0, 1) : 0;
@@ -1037,15 +1323,55 @@ void Arena::draw(Gfx &g) {
 	for (const HProj &p : g_hp) {
 		if (p.life <= 0) continue;
 		pg.color = Color(p.god >= 0 ? godColor(p.god) : 0xC8FFFF).lighten(0.4f);
-		if (p.kind) gfx3d::draw(A.slash, Mat4::translate(p.p) * Mat4::rotY(atan2f(p.v.x, p.v.z)) * Mat4::scale(Vec3(0.9f, 1, 0.6f)), pg);
-		else gfx3d::draw(A.shard, Mat4::translate(p.p) * Mat4::rotY(t * 20) * Mat4::rotX(PI / 2) * Mat4::scale(Vec3(1.2f, 2.2f, 1.2f)), pg);
+		float yy = atan2f(p.v.x, p.v.z);
+		switch (p.kind) {
+		case HK_WAVE: gfx3d::draw(A.slash, Mat4::translate(p.p) * Mat4::rotY(yy) * Mat4::scale(Vec3(0.9f, 1, 0.6f)), pg); break;
+		case HK_BOULDER: gfx3d::draw(A.world[WM_R_ROCK], Mat4::translate(p.p + Vec3(0, -0.45f, 0)) * Mat4::rotY(yy) * Mat4::rotX(t * 9) * Mat4::scale(Vec3(0.7f, 0.9f, 0.7f)), lit); break;
+		case HK_DAGGER: gfx3d::draw(A.shard, Mat4::translate(p.p) * Mat4::rotY(yy) * Mat4::rotX(PI / 2) * Mat4::scale(Vec3(0.6f, 2.6f, 0.6f)), pg); break;
+		case HK_BEAM: gfx3d::draw(A.shard, Mat4::translate(p.p) * Mat4::rotY(yy) * Mat4::rotX(PI / 2) * Mat4::scale(Vec3(0.8f, 3.5f, 0.8f)), pg); break;
+		default: gfx3d::draw(A.shard, Mat4::translate(p.p) * Mat4::rotY(t * 20) * Mat4::rotX(PI / 2) * Mat4::scale(Vec3(1.2f, 2.2f, 1.2f)), pg);
+		}
+	}
+	for (const Summon &m : g_sum) {
+		if (!m.active) continue;
+		float fade = clampf((m.dur - m.t) * 3, 0, 1) * clampf(m.t * 6, 0, 1);
+		Material sm; sm.lit = false;
+		switch (m.kind) {
+		case SM_TORNADO:
+			sm.color = Color(0xF0F8FF, 0.7f * fade);
+			for (int k = 0; k < 6; k++)
+				gfx3d::draw(A.slash, Mat4::translate(m.p + Vec3(0, 0.2f + k * 0.42f, 0)) * Mat4::rotY(t * (10 + k) + k * 1.3f) * Mat4::scale(Vec3(0.35f + k * 0.2f, 1, 0.35f + k * 0.2f)), sm);
+			break;
+		case SM_WOLF: {
+			sm.color = Color(0xFFFFFF, 0.85f * fade);
+			float run = sinf(m.t * 18) * 0.06f;
+			Mat4 wm = Mat4::translate(m.p + Vec3(0, fabsf(run), 0)) * Mat4::rotY(m.yaw) * Mat4::scale(Vec3(1.25f, 1.25f, 1.25f)) * Mat4::rotY(0.5f) *
+			          Mat4::translate(Vec3(-0.62f, 0, -0.25f)) * Mat4::scale(Vec3(1 / 1.3f, 1 / 1.3f, 1 / 1.3f));
+			gfx3d::draw(CM[CH_SYLV].part[PK_PET], wm, sm);
+			break;
+		}
+		case SM_STAR: sm.color = Color(0xFFF2B0, fade); gfx3d::draw(A.shard, Mat4::translate(m.p) * Mat4::rotY(t * 6) * Mat4::scale(Vec3(1.8f, 2.4f, 1.8f)), sm); break;
+		case SM_CLONE: {
+			Pose cp;
+			cp.armYaw = 1.5f; cp.armLift = 1.5f; cp.weaponBlend = 1; cp.bodyTwist = m.t / m.dur * 2 * PI;
+			drawGhost(CH_SEREN, Mat4::translate(m.p) * Mat4::rotY(m.yaw), &cp, Color(0x8A5AFF, 0.55f * fade));
+			break;
+		}
+		case SM_FIRERING: sm.color = Color(0xFF6A2A, (0.25f + 0.1f * sinf(t * 12)) * fade); gfx3d::draw(A.disc, Mat4::translate(m.p + Vec3(0, 0.1f, 0)) * Mat4::scale(Vec3(2.4f, 1, 2.4f)), sm); break;
+		case SM_RING: {
+			float r = 0.5f + m.t / m.dur * 3.8f;
+			sm.color = Color(0xE8B070, 0.5f * (1 - m.t / m.dur));
+			for (int k = 0; k < 6; k++) gfx3d::draw(A.slash, Mat4::translate(m.p + Vec3(0, 0.25f, 0)) * Mat4::rotY(k * PI / 3) * Mat4::scale(Vec3(r, 1, r)), sm);
+			break;
+		}
+		}
 	}
 	Material ep; ep.lit = false; ep.color = Color(0x9AFFF8);
 	for (const EProj &p : g_ep) if (p.life > 0) gfx3d::draw(A.shard, Mat4::translate(p.p) * Mat4::scale(Vec3(1.8f, 1.8f, 1.8f)), ep);
 	for (const SlashFx &s : g_slash) {
 		if (s.t >= s.dur) continue;
 		float k = s.t / s.dur;
-		Material sm; sm.lit = false; sm.color = s.c.alpha(1 - k * k);
+		Material sm; sm.lit = false; sm.color = s.c.alpha(s.c.a * (1 - k * k));
 		float sc2 = 0.85f + 0.3f * k;
 		gfx3d::draw(A.slash, s.xf * Mat4::scale(Vec3(sc2, 1, sc2)), sm);
 	}
@@ -1055,7 +1381,7 @@ void Arena::draw(Gfx &g) {
 	float dep, dep2;
 	for (int k = 0; k < nObst; k++)
 		if (obst[k].fire && gfx3d::project(g, cam, obst[k].pos + Vec3(0, 1.3f, 0), &sp, &dep)) g.image(A.ui[UI_P_GLOW], sp.x, sp.y, 1.1f, 1.1f, 0, Color(0xFF9A4A, 0.45f + 0.1f * sinf(t * 11)), 1, dep);
-	for (int k = 0; k < 28; k += 3) {
+	for (int k = 0; k < 28 && biome == 0; k += 3) {
 		float a0 = 2 * PI * k / 28, am = 2 * PI * (k + 0.5f) / 28;
 		if (cosf(am) > 0.35f) continue;
 		if (gfx3d::project(g, cam, Vec3(sinf(a0) * 4.83f, 2.32f, cosf(a0) * 4.83f), &sp, &dep))
@@ -1079,9 +1405,16 @@ void Arena::draw(Gfx &g) {
 		}
 	}
 	for (const Enemy &e : enemies) {                                  // Lebensbalken
+		if (e.alive && e.type == EN_ARCHER && e.state == 2) {         // Ziellaser
+			Vec3 a0 = e.pos + Vec3(0, 1.0f, 0), a1 = a0 + e.aim * 10;
+			if (gfx3d::project(g, cam, a0, &sp, &dep) && gfx3d::project(g, cam, a1, &sp2, &dep2)) {
+				float k = clampf(e.st / 0.85f, 0, 1);
+				g.line(sp.x, sp.y, sp2.x, sp2.y, e.st > 0.55f ? 2.0f : 1.0f, Color(0xFF5AD0, 0.25f + 0.6f * k), dep);
+			}
+		}
 		if (!e.alive || e.type == EN_DUMMY || e.state == 0 || e.state == 5 || e.hp >= e.maxHp) continue;
 		if (!gfx3d::project(g, cam, e.pos + Vec3(0, (e.type == EN_BRUTE ? 2.2f : 1.5f) * e.scale, 0), &sp, &dep)) continue;
-		float w = e.type == EN_BOSS ? 0 : e.elite ? 40 : 28;
+		float w = e.type == EN_BOSS || e.type == EN_QUEEN ? 0 : e.elite ? 40 : 28;
 		if (w <= 0) continue;
 		g.rect(sp.x - w / 2 - 1, sp.y - 1, w + 2, 5, Color(0x000000, 0.7f), dep);
 		g.rect(sp.x - w / 2, sp.y, w * clampf(e.hp / e.maxHp, 0, 1), 3, e.elite ? Color(0xFFC850) : Color(0xFF5A6A), dep);

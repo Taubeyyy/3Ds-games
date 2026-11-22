@@ -1,0 +1,13 @@
+70 shot s_title
+80 tap 160 120
+110 tap 160 155
+150 stick 1 0 40
+170 shot s_run
+175 shot s_run2
+200 stick 0 -1 10
+202 key B
+206 shot s_dash1
+210 shot s_dash2
+240 key A
+248 shot s_atk
+260 quit

@@ -3,7 +3,7 @@
 
 enum RunState { RS_ENTER, RS_FIGHT, RS_CLEARED, RS_CHOICE, RS_DOORS, RS_DEAD, RS_WIN };
 enum Choice { CK_NONE, CK_BOON, CK_ANVIL, CK_SHOP, CK_EVENT };
-static const int LAST_ROOM = 12;
+static const int LAST_ROOM = 14, BOSS1_ROOM = 7;
 static const char *ROOM_NAME[RT_COUNT] = {"Kampf", "Elite", "Schatzkammer", "Händler", "Sternenquelle", "Ereignis", "Prüfung", "Wächter der Tiefe"};
 static const char *MOD_NAME[RM_COUNT] = {"", "Eile: Gegner schneller", "Glas: alle nehmen 50% mehr Schaden", "Schwarm: viele Krabbler", "Sternregen: Meteore!"};
 
@@ -54,13 +54,21 @@ static void spawnWave() {
 	while (budget > 0.5f && n < 14) {
 		int type;
 		float x = r.f();
-		if (R.mod == RM_SWARM && x < 0.55f) type = EN_CRAWLER;
+		if (AR.biome == 1) {
+			if (R.mod == RM_SWARM && x < 0.55f) type = EN_SPIDER;
+			else if (x < 0.22f) type = EN_SPIDER;
+			else if (x < 0.42f) type = EN_ARCHER;
+			else if (x < 0.56f) type = EN_GEODE;
+			else if (x < 0.68f) type = EN_BOMBER;
+			else if (x < 0.84f) type = EN_SHARD;
+			else type = EN_WISP;
+		} else if (R.mod == RM_SWARM && x < 0.55f) type = EN_CRAWLER;
 		else if (R.room >= 5 && x < 0.12f) type = EN_BRUTE;
 		else if (R.room >= 3 && x < 0.3f) type = EN_BOMBER;
 		else if (R.room >= 2 && x < 0.5f) type = EN_WISP;
 		else if (x < 0.75f) type = EN_SHARD;
 		else type = EN_CRAWLER;
-		float cost = type == EN_BRUTE ? 5 : type == EN_CRAWLER ? 1 : 2;
+		float cost = type == EN_BRUTE ? 5 : type == EN_GEODE ? 4 : type == EN_CRAWLER ? 1 : 2;
 		if (cost > budget + 0.5f) continue;
 		budget -= cost;
 		Vec3 p;
@@ -96,15 +104,19 @@ static void enterRoom(int type, int reward, int god, int mod) {
 	R.bannerT = 0;
 	R.meteorT = 2;
 	R.choice = CK_NONE;
+	int prevBiome = AR.biome;
+	AR.biome = R.room > BOSS1_ROOM ? 1 : 0;
 	AR.newRoom(int(R.rng.next() % 1000) + R.room * 31);
+	if (AR.biome == 1 && prevBiome == 0) ui::toast("Neuer Bereich", "Die Kristallgrotten", Color(0x8AE8FF));
 	AR.dmgMulRoom = mod == RM_GLASS ? 1.5f : 1;
 	AR.speedMulRoom = mod == RM_HASTE ? 1.35f : 1;
 	// Räume ohne Kampf: Objekt in der Mitte
 	int center = type == RT_TREASURE ? PK2_CHEST : type == RT_SHOP ? PK2_SHOP : type == RT_FOUNTAIN ? PK2_FOUNTAIN : type == RT_EVENT ? PK2_EVENT : 0;
 	if (center) { AR.pickup = Pickup(); AR.pickup.kind = center; AR.pickup.pos = Vec3(0, 0.075f, -0.6f); AR.pickup.active = true; }
 	if (type == RT_BOSS) {
-		int id = AR.spawn(EN_BOSS, Vec3(0, 0, -1.8f), false, 0.4f);
-		if (id >= 0) { AR.enemies[id].hp = AR.enemies[id].maxHp = 1400 + 60 * R.room; }
+		bool queen = R.room >= LAST_ROOM;
+		int id = AR.spawn(queen ? EN_QUEEN : EN_BOSS, Vec3(0, 0, -1.8f), false, 0.4f);
+		if (id >= 0) { AR.enemies[id].hp = AR.enemies[id].maxHp = queen ? 2000.f : 1300.f; }
 		audio::musicVolume(S.music ? 0.85f : 0);
 	}
 	sfx(A.whoosh, 0.9f, 0.6f);
@@ -118,8 +130,8 @@ static void genDoor(Door &d, int i, int n, Rng &r) {
 	d.active = true;
 	int next = R.room + 1;
 	float x = r.f() * 100;
-	if (next == LAST_ROOM) { d.room = RT_BOSS; return; }
-	if (next == LAST_ROOM - 1) { d.room = i == 0 ? RT_FOUNTAIN : RT_SHOP; return; }
+	if (next == LAST_ROOM || next == BOSS1_ROOM) { d.room = RT_BOSS; return; }
+	if (next == LAST_ROOM - 1 || next == BOSS1_ROOM - 1) { d.room = i == 0 ? RT_FOUNTAIN : RT_SHOP; return; }
 	if (x < 52) d.room = RT_COMBAT;
 	else if (x < 62 && next >= 3) d.room = RT_ELITE;
 	else if (x < 68) d.room = RT_TREASURE;
@@ -147,7 +159,8 @@ static void openDoors() {
 	R.st = 0;
 	if (R.room >= LAST_ROOM) return;
 	Rng &r = R.rng;
-	int n = R.room + 1 >= LAST_ROOM ? 1 : R.room + 1 == LAST_ROOM - 1 ? 2 : (r.f() < 0.45f ? 3 : 2);
+	int nx = R.room + 1;
+	int n = (nx == LAST_ROOM || nx == BOSS1_ROOM) ? 1 : (nx == LAST_ROOM - 1 || nx == BOSS1_ROOM - 1) ? 2 : (r.f() < 0.45f ? 3 : 2);
 	for (int i = 0; i < n; i++) {
 		for (int tries = 0; tries < 8; tries++) {
 			genDoor(AR.doors[i], i, n, r);
@@ -176,6 +189,7 @@ static void finishRun(bool win) {
 
 // ------------------------------------------------------------------ Belohnungen
 static void openBoon(int god) {
+	if (god > 0 && god < CH_COUNT) sfx(A.motif[god], 1, 0.9f);
 	R.choice = CK_BOON;
 	R.cameoGod = god;
 	R.nOffers = makeOffers(god, R.offers, luck() + (R.roomType == RT_ELITE ? 0.15f : 0), R.rng);
@@ -236,7 +250,14 @@ static void roomCleared() {
 	if (R.roomType == RT_ELITE) R.coins += 30;
 	float h = 0.05f + AR.mods.healRoom + (AR.mods.passive[CH_LYRA] ? 0.15f : 0);
 	AR.heal(AR.mods.maxHp * h);
-	if (R.roomType == RT_BOSS) { finishRun(true); return; }
+	if (R.roomType == RT_BOSS && R.room >= LAST_ROOM) { finishRun(true); return; }
+	if (R.roomType == RT_BOSS) {                       // erster Boss: große Belohnung, dann weiter in die Grotten
+		R.splitter += 8;
+		AR.heal(AR.mods.maxHp * 0.3f);
+		R.reward = PK2_BOON;
+		R.god = R.rng.irange(CH_IGNARA, CH_SYLV);
+		ui::toast("Wächter besiegt!", "+8 Sternsplitter, Heilung und ein Segen", Color(0xFFE08A));
+	}
 	sfx(A.chime, 1.0f, 0.9f);
 	if (R.reward) {
 		AR.pickup = Pickup();
@@ -364,7 +385,12 @@ void runUpdate(float dt, const Input &inReal) {
 		int n = R.choice == CK_SHOP ? 4 : R.choice == CK_EVENT ? 2 : R.nOffers;
 		if (in.pressed(KEY_DLEFT) || in.pressed(KEY_DUP)) { R.sel = (R.sel + n - 1) % n; sfx(A.select); }
 		if (in.pressed(KEY_DRIGHT) || in.pressed(KEY_DDOWN)) { R.sel = (R.sel + 1) % n; sfx(A.select); }
-		for (int i = 0; i < 4; i++) if (ui::clicked(80 + i)) { R.sel = i; choose(i); return; }
+		for (int i = 0; i < 4; i++)
+			if (ui::clicked(80 + i)) {
+				bool cards = R.choice == CK_BOON || R.choice == CK_ANVIL;
+				if (cards && R.sel != i) { R.sel = i; sfx(A.select); return; }
+				R.sel = i; choose(i); return;
+			}
 		if (in.pressed(KEY_A) && R.st > 0.3f) choose(R.choice == CK_SHOP && getenvBot() ? 3 : R.sel);
 		return;
 	}
@@ -453,22 +479,33 @@ void drawGodCameo(Gfx &g, int god, float t, float appear) {
 }
 
 static void drawCard(Gfx &g, int id, float x, float y, const Offer &o, bool sel) {
-	g.image(A.ui[sel ? UI_CARD : UI_CARD_OFF], x + 48, y + 60, sel ? 1.04f : 1, sel ? 1.04f : 1, 0, Color(0xFFFFFF));
-	if (sel) g.image(A.ui[UI_P_GLOW], x + 48, y + 60, 2.2f, 2.6f, 0, Color(o.anvil >= 0 ? 0xE8C060 : godColor(o.god), 0.22f), 1);
+	float k = sel ? 1.0f : 0.92f;
+	g.image(A.ui[sel ? UI_CARD : UI_CARD_OFF], x + 48, y + 44, k, k * 0.74f, 0, Color(0xFFFFFF));
+	if (sel) g.image(A.ui[UI_P_GLOW], x + 48, y + 44, 2.2f, 2.0f, 0, Color(o.anvil >= 0 ? 0xE8C060 : godColor(o.god), 0.3f), 1);
 	int icon = o.anvil >= 0 ? UI_ICON_ANVIL : UI_SIGIL_SEREN + o.god;
-	g.image(A.ui[icon], x + 48, y + 20, o.anvil >= 0 ? 0.65f : 0.42f, o.anvil >= 0 ? 0.65f : 0.42f, 0, Color(0xFFFFFF));
+	g.image(A.ui[icon], x + 48, y + 26, o.anvil >= 0 ? 0.75f : 0.5f, o.anvil >= 0 ? 0.75f : 0.5f, 0, Color(0xFFFFFF, sel ? 1.f : 0.8f));
 	const char *nm = o.anvil >= 0 ? anvilName(o.anvil) : boonName(o.god, o.slot);
-	g.text(x + 48, y + 38, 0.36f, Color(0xFFFFFF), nm, ALIGN_CENTER, 92);
+	g.text(x + 48, y + 50, 0.4f, Color(sel ? 0xFFFFFF : 0xC8C4E0), nm, ALIGN_CENTER, 92);
+	if (o.anvil < 0) g.text(x + 48, y + 68, 0.34f, Color(RARITY_COL[o.rarity]), RARITY_NAME[o.rarity], ALIGN_CENTER, 92);
+	ui::hit(id, x, y, 96, 90);
+}
+
+// große Beschreibung der ausgewählten Karte
+static void drawOfferInfo(Gfx &g, const Offer &o) {
+	g.rrect(6, 128, 308, 84, 10, Color(0x14102C, 0.95f), Color(0x0A0818, 0.95f));
+	Color c(o.anvil >= 0 ? 0xE8C060 : godColor(o.god));
+	g.rect(6, 128, 308, 3, c);
+	const char *nm = o.anvil >= 0 ? anvilName(o.anvil) : boonName(o.god, o.slot);
+	g.text(16, 134, 0.5f, c.lighten(0.3f), nm, ALIGN_LEFT);
 	if (o.anvil < 0) {
 		const char *sl[5] = {"Angriff", "Wirbel", "Splitter", "Ausweichen", "Gabe"};
-		char b[48];
-		snprintf(b, sizeof b, "%s · %s", o.upgrade ? "Stufe+" : sl[o.slot], RARITY_NAME[o.rarity]);
-		g.text(x + 48, y + 52, 0.28f, Color(RARITY_COL[o.rarity]), b, ALIGN_CENTER, 92);
+		char b[64];
+		snprintf(b, sizeof b, "%s · %s", o.upgrade ? "Verstärkung" : sl[o.slot], RARITY_NAME[o.rarity]);
+		g.text(304, 137, 0.36f, Color(RARITY_COL[o.rarity]), b, ALIGN_RIGHT);
 	}
-	char d[160];
+	char d[200];
 	boonDesc(o, d, sizeof d);
-	g.text(x + 6, y + 66, 0.3f, Color(0xD8D4F0), d, ALIGN_LEFT, 84);
-	ui::hit(id, x, y, 96, 120);
+	g.text(16, 158, 0.44f, Color(0xF0ECFF), d, ALIGN_LEFT, 290);
 }
 
 static void drawHud(Gfx &g) {
@@ -533,8 +570,8 @@ void runDraw(Gfx &g) {
 		g.rrect(8, 8, 104, 10, 4, Color(0x000000, 0.6f), Color(0x000000, 0.6f), -2);
 		if (k > 0) g.rrect(9, 9, 102 * k, 8, 3, Color(0xFF6A7A), Color(0xC8283A), -2);
 		for (const Enemy &e : AR.enemies)
-			if (e.alive && e.type == EN_BOSS) {
-				g.text(200, 204, 0.42f, Color(0xFF9A7A), "Wächter der Tiefe", ALIGN_CENTER, 0, true, -2);
+			if (e.alive && (e.type == EN_BOSS || e.type == EN_QUEEN)) {
+				g.text(200, 204, 0.42f, Color(0xFF9A7A), R.room >= LAST_ROOM ? "Kristallkönigin" : "Wächter der Tiefe", ALIGN_CENTER, 0, true, -2);
 				g.rrect(60, 222, 280, 10, 4, Color(0x000000, 0.7f), Color(0x000000, 0.7f), -2);
 				g.rrect(61, 223, 278 * clampf(e.hp / e.maxHp, 0, 1), 8, 3, Color(0xFF5A3A), Color(0xA0201A), -2);
 			}
@@ -550,7 +587,7 @@ void runDraw(Gfx &g) {
 			float a = clampf(R.st * 1.5f, 0, 1);
 			g.rect(0, 0, 400, 240, Color(0x000000, 0.55f * a), -2);
 			g.text(200, 80, 1.0f, R.state == RS_WIN ? Color(0xFFE08A, a) : Color(0xFF8A8A, a), R.state == RS_WIN ? "Die Tiefe erbebt!" : "Gefallen", ALIGN_CENTER, 0, true, -3);
-			g.text(200, 120, 0.45f, Color(0xFFFFFF, a), R.state == RS_WIN ? "Du hast den Wächter besiegt." : "Die Sterne tragen dich zurück an die Oberfläche.", ALIGN_CENTER, 0, true, -3);
+			g.text(200, 120, 0.45f, Color(0xFFFFFF, a), R.state == RS_WIN ? "Die Kristallkönigin ist gefallen." : "Die Sterne tragen dich zurück an die Oberfläche.", ALIGN_CENTER, 0, true, -3);
 		}
 		if (R.clearT < 1.6f && R.state != RS_WIN) {
 			float k = R.clearT;
@@ -562,8 +599,9 @@ void runDraw(Gfx &g) {
 		if (R.roomType == RT_BOSS && R.bannerT < 2.6f) {
 			float a = R.bannerT < 0.3f ? R.bannerT / 0.3f : R.bannerT > 2.0f ? (2.6f - R.bannerT) / 0.6f : 1;
 			g.rect(0, 92, 400, 54, Color(0x200008, 0.7f * a), -2);
-			g.text(200, 98, 0.9f, Color(0xFF8A6A, a), "WÄCHTER DER TIEFE", ALIGN_CENTER, 0, true, -3);
-			g.text(200, 128, 0.36f, Color(0xFFD8C8, a), "Er bewacht den letzten Splitter des Himmels", ALIGN_CENTER, 0, true, -3);
+			bool q = R.room >= LAST_ROOM;
+			g.text(200, 98, 0.9f, q ? Color(0xC8A0FF, a) : Color(0xFF8A6A, a), q ? "KRISTALLKÖNIGIN" : "WÄCHTER DER TIEFE", ALIGN_CENTER, 0, true, -3);
+			g.text(200, 128, 0.36f, Color(0xFFD8C8, a), q ? "Sie hütet das Herz des gefallenen Himmels" : "Er versperrt den Weg in die Grotten", ALIGN_CENTER, 0, true, -3);
 		}
 		float fa = R.transT > 0 ? 1 - R.transT / 0.35f : R.fadeIn;
 		if (fa > 0) g.rect(0, 0, 400, 240, Color(0x06040E, clampf(fa, 0, 1)), -4);
@@ -588,8 +626,9 @@ void runDraw(Gfx &g) {
 	if (R.state == RS_CHOICE) {
 		if (R.choice == CK_BOON || R.choice == CK_ANVIL) {
 			g.text(160, 8, 0.5f, Color(0xE8C060), R.choice == CK_BOON ? "WÄHLE EINEN SEGEN" : "AMBOSS: WÄHLE EINE VERBESSERUNG", ALIGN_CENTER);
-			for (int i = 0; i < R.nOffers; i++) drawCard(g, 80 + i, 8 + i * 104, 40, R.offers[i], R.sel == i);
-			g.text(160, 214, 0.3f, Color(0x8A86B0), "Antippen oder Steuerkreuz + A", ALIGN_CENTER);
+			for (int i = 0; i < R.nOffers; i++) drawCard(g, 80 + i, 8 + i * 104, 30, R.offers[i], R.sel == i);
+			if (R.sel < R.nOffers) drawOfferInfo(g, R.offers[R.sel]);
+			g.text(160, 218, 0.36f, Color(0xB8B4D8), "Antippen = ansehen, nochmal = nehmen  ·  A: nehmen", ALIGN_CENTER);
 		} else if (R.choice == CK_SHOP) {
 			g.text(160, 8, 0.5f, Color(0xFFD25A), "HÄNDLERIN", ALIGN_CENTER);
 			char b[48];
@@ -604,7 +643,7 @@ void runDraw(Gfx &g) {
 				static const int IC[SH_COUNT] = {UI_ICON_FOUNTAIN, UI_ICON_POWER, UI_ICON_ANVIL, UI_ICON_HEART, UI_ICON_GEM, UI_ICON_POWER};
 				g.image(A.ui[IC[it.kind]], 32, y + 22, 0.7f, 0.7f, 0, Color(0xFFFFFF, it.sold ? 0.3f : 1));
 				g.text(58, y + 5, 0.42f, Color(it.sold ? 0x6A6A7A : 0xFFFFFF), SHOP_NAME[it.kind], ALIGN_LEFT);
-				g.text(58, y + 24, 0.32f, Color(0xB8B4D8), SHOP_DESC[it.kind], ALIGN_LEFT);
+				g.text(58, y + 23, 0.38f, Color(0xD8D4F0), SHOP_DESC[it.kind], ALIGN_LEFT);
 				snprintf(b, sizeof b, it.sold ? "verkauft" : "%d", it.price);
 				g.text(298, y + 12, 0.45f, it.sold ? Color(0x6A6A7A) : can ? Color(0xFFD25A) : Color(0xFF7A6A), b, ALIGN_RIGHT);
 				ui::hit(80 + i, 10, y, 300, 44);
@@ -614,11 +653,11 @@ void runDraw(Gfx &g) {
 			const Event &ev = EVENTS[R.eventId];
 			g.image(A.ui[UI_ICON_EVENT], 160, 30, 0.8f, 0.8f, 0, Color(0xFFFFFF));
 			g.text(160, 54, 0.5f, Color(0xC8A0FF), ev.title, ALIGN_CENTER);
-			g.text(24, 80, 0.38f, Color(0xE8E4F8), ev.text, ALIGN_LEFT, 272);
+			g.text(20, 76, 0.46f, Color(0xE8E4F8), ev.text, ALIGN_LEFT, 280);
 			drawButton(g, 80, 44, 128, UI_BTN_MAIN, "", R.sel == 0, 0);
-			g.text(160, 141, 0.36f, Color(0xFFF0C8), ev.a, ALIGN_CENTER, 220);
+			g.text(160, 140, 0.42f, Color(0xFFF0C8), ev.a, ALIGN_CENTER, 224);
 			drawButton(g, 81, 44, 182, UI_BTN, "", R.sel == 1, 0);
-			g.text(160, 191, 0.36f, Color(0xFFFFFF), ev.b, ALIGN_CENTER, 220);
+			g.text(160, 190, 0.42f, Color(0xFFFFFF), ev.b, ALIGN_CENTER, 224);
 		}
 		return;
 	}
