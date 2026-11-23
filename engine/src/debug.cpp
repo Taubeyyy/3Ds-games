@@ -23,6 +23,7 @@ static int g_histI;
 const Stats &stats() { return g_st; }
 bool overlayOn() { return g_on; }
 void toggle() { g_on = !g_on; }
+void setCmdBuf(float u) { g_st.cmdBuf += (u - g_st.cmdBuf) * 0.2f; if (u > g_st.cmdBuf) g_st.cmdBuf = u; }
 
 void begin(const char *name) {
 	if (g_depth >= 8) return;
@@ -65,7 +66,7 @@ void overlay(Gfx &g, float x, float y) {
 	g.textf(x + 6, y + 3, 0.42f, fc, ALIGN_LEFT, "%2.0f FPS", g_st.fps);
 	g.textf(x + 62, y + 6, 0.32f, Color(0xA8B0D8), ALIGN_LEFT, "%.1f ms  x%d upd", g_st.frameMs, g_st.updatesPerFrame);
 	g.textf(x + 6, y + 20, 0.32f, Color(0xD8E0F8), ALIGN_LEFT, "CPU upd %.1f  draw %.1f  GPU %.1f", g_st.updateMs, g_st.drawMs, g_st.gpuMs);
-	if (g_st.memFree) g.textf(x + 6, y + 32, 0.32f, Color(0x8A98C8), ALIGN_LEFT, "RAM frei %u KB  linear %u KB", g_st.memFree / 1024, g_st.linearFree / 1024);
+	if (g_st.memFree) g.textf(x + 6, y + 32, 0.32f, Color(0x8A98C8), ALIGN_LEFT, "RAM %u KB  lin %u KB  GPU %2.0f%%", g_st.memFree / 1024, g_st.linearFree / 1024, g_st.cmdBuf * 100);
 	// Bildzeit-Verlauf
 	for (int i = 0; i < 64; i++) {
 		float v = g_hist[(g_histI + i) & 63];

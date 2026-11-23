@@ -65,7 +65,7 @@ static C3D_LightLutDA g_da[8];
 static float g_daRange[8];
 static float attnFn(float d, float range, float) { float t = 1 - d * d / (range * range); return t > 0 ? t * t : 0; }
 static float g_lutShine = -1;
-static bool g_lutBound;
+static bool g_lutBound, g_matValid;
 static C3D_FogLut g_fog;
 static C3D_Mtx g_proj;
 static Mat4 g_view;
@@ -122,6 +122,7 @@ void begin(Gfx &g, const Camera3D &cam, const Scene3D &scene) {
 	// Licht
 	C3D_LightEnvInit(&g_lenv);
 	g_lutBound = false;
+	g_matValid = false;
 	C3D_LightEnvAmbient(&g_lenv, 1, 1, 1); // Umgebungslicht kommt aus material.ambient (= Szene)
 	C3D_LightEnvBind(&g_lenv);
 	for (int i = 0; i < scene.nLights && i < 8; i++) {
@@ -151,6 +152,7 @@ void begin(Gfx &g, const Camera3D &cam, const Scene3D &scene) {
 
 void draw(const Mesh &m, const Mat4 &model, const Material &mat) {
 	if (!m.v || !m.ni) return;
+	if (C3D_GetCmdBufUsage() > 0.9f) return;   // Sicherheitsnetz gegen Überlauf
 	C3D_Mtx mv;
 	toC3D(g_view * model, &mv);
 	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_uMV, &mv);
@@ -159,15 +161,21 @@ void draw(const Mesh &m, const Mat4 &model, const Material &mat) {
 		// LUT nur bei Änderung neu hochladen (sonst läuft der Befehlspuffer bei vielen Objekten voll)
 		if (g_lutShine != mat.shininess) { LightLut_Phong(&g_lutPhong, mat.shininess); g_lutShine = mat.shininess; g_lutBound = false; }
 		if (!g_lutBound) { C3D_LightEnvLut(&g_lenv, GPU_LUT_D0, GPU_LUTINPUT_NH, false, &g_lutPhong); g_lutBound = true; }
-		C3D_Material cm;
-		memset(&cm, 0, sizeof cm);
-		rgb(g_scene->ambient, 1, cm.ambient);
-		cm.diffuse[0] = cm.diffuse[1] = cm.diffuse[2] = 1;
-		cm.specular0[0] = cm.specular0[1] = cm.specular0[2] = mat.specular;
-		rgb(mat.emission, 1, cm.emission);
-		C3D_LightEnvMaterial(&g_lenv, &cm);
-		C3D_LightEnvBind(&g_lenv);
-	} else C3D_LightEnvBind(nullptr);
+		// Material nur bei Änderung hochladen; Lichtumgebung bleibt gebunden (Umschalten würde alles neu senden)
+		static u32 lastEm = 0xFFFFFFFF, lastAmb = 0xFFFFFFFF;
+		static float lastSpec = -1;
+		if (mat.emission.hex != lastEm || g_scene->ambient.hex != lastAmb || mat.specular != lastSpec || !g_matValid) {
+			C3D_Material cm;
+			memset(&cm, 0, sizeof cm);
+			rgb(g_scene->ambient, 1, cm.ambient);
+			cm.diffuse[0] = cm.diffuse[1] = cm.diffuse[2] = 1;
+			cm.specular0[0] = cm.specular0[1] = cm.specular0[2] = mat.specular;
+			rgb(mat.emission, 1, cm.emission);
+			C3D_LightEnvMaterial(&g_lenv, &cm);
+			lastEm = mat.emission.hex; lastAmb = g_scene->ambient.hex; lastSpec = mat.specular;
+			g_matValid = true;
+		}
+	}
 	// Kombinierer: Vertexfarbe * Materialfarbe (* Textur) (* Licht) (+ Glanz)
 	C3D_TexEnv *e = C3D_GetTexEnv(0);
 	C3D_TexEnvInit(e);

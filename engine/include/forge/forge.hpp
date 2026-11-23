@@ -192,6 +192,7 @@ struct Stats {
 	float fps = 60, frameMs = 16.7f, updateMs = 0, drawMs = 0, gpuMs = 0;
 	u32 memFree = 0, linearFree = 0; // Bytes (nur 3DS)
 	int updatesPerFrame = 1;
+	float cmdBuf = 0;                // GPU-Befehlspuffer-Auslastung 0..1 (nur 3DS)
 };
 const Stats &stats();
 void begin(const char *name);   // Messbereich (verschachtelbar, max. 16 Namen)
@@ -204,6 +205,7 @@ bool overlayOn();                // per L+R+SELECT umgeschaltet (Config::debugCo
 // intern (Backends)
 void frameDone(float frameMs, float updMs, float drawMs, float gpuMs, int updates, u32 memFree, u32 linFree);
 void toggle();
+void setCmdBuf(float usage);
 } // namespace debug
 #define FORGE_PROFILE(name) ::forge::debug::Scope FORGE_CAT(_forge_prof_, __LINE__)(name)
 #define FORGE_CAT2(a, b) a##b

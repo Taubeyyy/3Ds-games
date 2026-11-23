@@ -337,7 +337,7 @@ int run(App &app, const Config &cfg) {
 	gfxInitDefault();
 	osSetSpeedupEnable(true);
 	if (cfg.romfs) romfsInit();
-	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE * 2); // Platz für viele 3D-Zeichenaufrufe pro Bild
+	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE * 4); // Platz für viele 3D-Zeichenaufrufe pro Bild (auch mit Stereo)
 	C2D_Init(cfg.maxObjects);
 	C2D_Prepare();
 	C3D_DepthTest(false, GPU_ALWAYS, GPU_WRITE_COLOR);
@@ -413,6 +413,7 @@ int run(App &app, const Config &cfg) {
 		g.screen = Screen::Bottom; g.width = BOT_W; g.height = SCR_H;
 		app.draw(g);
 		double t2 = tickMs();
+		debug::setCmdBuf(C3D_GetCmdBufUsage());
 		C3D_FrameEnd(0);
 		debug::frameDone(dt * 1000, float(t1 - t0), float(t2 - t1), C3D_GetDrawingTime(), steps, u32(osGetMemRegionFree(MEMREGION_APPLICATION)), u32(linearSpaceFree()));
 	}
